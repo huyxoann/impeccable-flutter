@@ -157,7 +157,8 @@ async function build() {
         .map(file => `./agents/${file}`)
     : [];
 
-  const pluginManifest = { ...rootManifest, skills: './skills/' };
+  const pluginManifest = { ...rootManifest };
+  delete pluginManifest.skills;
   if (pluginAgentEntries.length) {
     pluginManifest.agents = pluginAgentEntries;
   } else {
