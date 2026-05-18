@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "impeccable-flutter",
-      "source": "/Users/tranthach/Workspace/PersonalProject/impeccable-flutter/plugin",
+      "source": "./",
       "description": "Design fluency for Flutter development. 1 skill with 22 commands and curated anti-pattern detection.",
       "version": "3.1.1"
     }
