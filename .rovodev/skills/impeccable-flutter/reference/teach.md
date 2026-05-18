@@ -12,7 +12,7 @@ Every other impeccable-flutter command reads these files before doing any work.
 Run the shared loader first so you know what already exists:
 
 ```bash
-node .agents/skills/impeccable-flutter/scripts/load-context.mjs
+node .rovodev/skills/impeccable-flutter/scripts/load-context.mjs
 ```
 
 The output tells you whether PRODUCT.md and/or DESIGN.md already exist. If `migrated: true`, legacy `.impeccable-flutter.md` was auto-renamed to `PRODUCT.md`. Mention this once to the user.
@@ -149,7 +149,7 @@ Summarize:
 - The 3-5 strategic principles from PRODUCT.md that will guide future work
 - If DESIGN.md is pending, remind the user how to generate it later
 
-**Critical: re-run the loader to refresh session context.** After writing PRODUCT.md, run `node .agents/skills/impeccable-flutter/scripts/load-context.mjs` one final time and let its full JSON output land in conversation. This ensures subsequent commands in this session use the freshly-written PRODUCT.md, not a stale earlier version.
+**Critical: re-run the loader to refresh session context.** After writing PRODUCT.md, run `node .rovodev/skills/impeccable-flutter/scripts/load-context.mjs` one final time and let its full JSON output land in conversation. This ensures subsequent commands in this session use the freshly-written PRODUCT.md, not a stale earlier version.
 
 If teach was invoked as a blocker by another impeccable-flutter command (e.g. the user ran `$impeccable-flutter polish` with no PRODUCT.md), resume that original task now with the fresh context.
 

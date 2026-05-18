@@ -10,7 +10,7 @@ Before gathering assessments, do two small bookkeeping steps.
 
 2. **Compute the slug.** Run:
    ```bash
-   node .agents/skills/impeccable-flutter/scripts/critique-storage.mjs slug "<resolved-path-or-url>"
+   node .github/skills/impeccable-flutter/scripts/critique-storage.mjs slug "<resolved-path-or-url>"
    ```
    Keep the printed slug. If the command exits non-zero, skip persistence for this run.
 
@@ -102,11 +102,11 @@ Write it to `.impeccable-flutter/critique/` so the user can refer back. Skip thi
 2. **Pass the structured metadata**:
    ```bash
    IMPECCABLE_CRITIQUE_META='{"target":"<user phrasing>","total_score":<n>,"p0_count":<n>,"p1_count":<n>}' \
-     node .agents/skills/impeccable-flutter/scripts/critique-storage.mjs write <slug> <body-file>
+     node .github/skills/impeccable-flutter/scripts/critique-storage.mjs write <slug> <body-file>
    ```
 3. **Read the trend**:
    ```bash
-   node .agents/skills/impeccable-flutter/scripts/critique-storage.mjs trend <slug> 5
+   node .github/skills/impeccable-flutter/scripts/critique-storage.mjs trend <slug> 5
    ```
 
 ### Ask the User
