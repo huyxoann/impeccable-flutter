@@ -1,6 +1,6 @@
 # Craft Flow
 
-Build a feature with impeccable UX and UI quality: shape the design, land the visual direction, build real production code, and iterate until it meets a high-end studio bar.
+Build a feature with impeccable-flutter UX and UI quality: shape the design, land the visual direction, build real production code, and iterate until it meets a high-end studio bar.
 
 Before writing code, you need: PRODUCT.md loaded, register identified and the matching reference loaded, and a confirmed design direction for this task.
 

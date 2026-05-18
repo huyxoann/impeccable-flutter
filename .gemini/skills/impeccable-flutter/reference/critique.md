@@ -14,7 +14,7 @@ Before gathering assessments, do two small bookkeeping steps.
    ```
    Keep the printed slug. If the command exits non-zero, skip persistence for this run.
 
-3. **Read the ignore list** at `.impeccable/critique/ignore.md` if it exists. When a finding's text matches a line here, **drop it silently**.
+3. **Read the ignore list** at `.impeccable-flutter/critique/ignore.md` if it exists. When a finding's text matches a line here, **drop it silently**.
 
 ### Gather Assessments
 
@@ -24,7 +24,7 @@ Launch two independent assessments. **Neither may see the other's output.** Runn
 
 Read the relevant Dart source files. Evaluate:
 
-**AI Slop Detection (CRITICAL)**: Does this look like every other AI-generated interface? Review against ALL **DON'T** guidelines from the parent impeccable skill. Check for AI color palettes, generic Material 3 defaults without brand styling, card-and-column grids, and all other tells. **The test**: If someone said "AI made this," would you believe them immediately?
+**AI Slop Detection (CRITICAL)**: Does this look like every other AI-generated interface? Review against ALL **DON'T** guidelines from the parent impeccable-flutter skill. Check for AI color palettes, generic Material 3 defaults without brand styling, card-and-column grids, and all other tells. **The test**: If someone said "AI made this," would you believe them immediately?
 
 **Holistic Design Review**: visual hierarchy, information architecture, emotional resonance, discoverability, composition, typography, color, states & edge cases, microcopy.
 
@@ -96,7 +96,7 @@ Provocative questions that might unlock better solutions.
 
 ### Persist the Snapshot
 
-Write it to `.impeccable/critique/` so the user can refer back. Skip this step if the Setup slug was null.
+Write it to `.impeccable-flutter/critique/` so the user can refer back. Skip this step if the Setup slug was null.
 
 1. **Write the body to a temp file**
 2. **Pass the structured metadata**:

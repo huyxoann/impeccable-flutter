@@ -1,10 +1,10 @@
 /**
- * `impeccable skills` subcommand
+ * `impeccable-flutter skills` subcommand
  *
  * Usage:
- *   impeccable skills help      Show all available skills and commands
- *   impeccable skills install   Install skills via npx skills add
- *   impeccable skills update    Update skills to latest version
+ *   impeccable-flutter skills help      Show all available skills and commands
+ *   impeccable-flutter skills install   Install skills via npx skills add
+ *   impeccable-flutter skills update    Update skills to latest version
  */
 
 import { execSync } from 'node:child_process';
@@ -41,9 +41,9 @@ async function showHelp() {
 
   const pad = (s, n) => s + ' '.repeat(Math.max(0, n - s.length));
 
-  console.log('\n  Impeccable Skills & Commands\n');
-  console.log('  Install:  npx impeccable skills install');
-  console.log('  Update:   npx impeccable skills update');
+  console.log('\n  Impeccable Flutter Skills & Commands\n');
+  console.log('  Install:  npx impeccable-flutter skills install');
+  console.log('  Update:   npx impeccable-flutter skills update');
   console.log('  Docs:     https://impeccable.style/cheatsheet\n');
   console.log(`  ${pad('Command', 22)} Description`);
   console.log(`  ${'-'.repeat(22)} ${'-'.repeat(52)}`);
@@ -61,11 +61,11 @@ async function showHelp() {
 // ─── version helpers ─────────────────────────────────────────────────────────
 
 /**
- * Read the skills version from the impeccable SKILL.md frontmatter.
+ * Read the skills version from the impeccable-flutter SKILL.md frontmatter.
  */
 function getSkillsVersion(root) {
   for (const d of PROVIDER_DIRS) {
-    const skillMd = join(root, d, 'skills', 'impeccable', 'SKILL.md');
+    const skillMd = join(root, d, 'skills', 'impeccable-flutter', 'SKILL.md');
     if (!existsSync(skillMd)) continue;
     const content = readFileSync(skillMd, 'utf-8');
     const match = content.match(/^version:\s*(.+)$/m);
@@ -173,8 +173,8 @@ async function check() {
   const installed = isAlreadyInstalled(root);
 
   if (!installed) {
-    console.log('Impeccable is not installed in this project.');
-    console.log('Run `npx impeccable skills install` to install.');
+    console.log('Impeccable Flutter is not installed in this project.');
+    console.log('Run `npx impeccable-flutter skills install` to install.');
     process.exit(0);
   }
 
@@ -191,7 +191,7 @@ async function check() {
       console.log(`Skills are up to date${v ? ` (v${v})` : ''}.`);
     } else {
       console.log('Updates available.');
-      console.log('Run `npx impeccable skills update` to update.');
+      console.log('Run `npx impeccable-flutter skills update` to update.');
     }
   } catch (e) {
     console.error(`Could not check for updates: ${e.message}`);
@@ -208,9 +208,9 @@ function isAlreadyInstalled(root) {
     if (!existsSync(skillsDir)) continue;
     try {
       const entries = readdirSync(skillsDir);
-      // Look for 'impeccable' skill (or prefixed variant, or legacy 'teach-impeccable')
+      // Look for 'impeccable-flutter' skill (or prefixed variant, or legacy 'teach-impeccable')
       if (entries.some(e =>
-        e === 'impeccable' || e.endsWith('-impeccable') ||
+        e === 'impeccable-flutter' || e.endsWith('-impeccable-flutter') ||
         e === 'teach-impeccable' || e.endsWith('-teach-impeccable')
       )) {
         return d;
@@ -334,14 +334,14 @@ async function install(flags) {
     process.exit(0);
   }
 
-  console.log('Installing impeccable skills via npx skills...\n');
+  console.log('Installing impeccable-flutter skills via npx skills...\n');
   try {
     // --copy forces npx skills to install each provider's variant separately
     // instead of symlinking .claude/skills/ to .agents/skills/. The two
     // directories have meaningfully different per-provider content (frontmatter,
     // command prefix, paths), and the default symlink also fails silently when
     // .claude/ doesn't exist yet or on Windows without elevated privileges (#140).
-    execSync(`npx skills add pbakaus/impeccable --copy${yes ? ' -y' : ''}`, { stdio: 'inherit' });
+    execSync(`npx skills add pbakaus/impeccable-flutter --copy${yes ? ' -y' : ''}`, { stdio: 'inherit' });
   } catch (e) {
     process.exit(e.status ?? 1);
   }
@@ -379,17 +379,17 @@ async function install(flags) {
     // Cleanup script not available -- skip
   }
 
-  console.log(`\nDone! Run /${prefix}impeccable teach in your AI harness to set up design context.\n`);
+  console.log(`\nDone! Run /${prefix}impeccable-flutter teach in your AI harness to set up design context.\n`);
 }
 
-/** Detect prefix by looking for the 'impeccable' skill (or legacy 'teach-impeccable') */
+/** Detect prefix by looking for the 'impeccable-flutter' skill (or legacy 'teach-impeccable') */
 function detectPrefix(root) {
   for (const d of PROVIDER_DIRS) {
     const skillsDir = join(root, d, 'skills');
     if (!existsSync(skillsDir)) continue;
     for (const name of readdirSync(skillsDir)) {
-      if (name === 'impeccable') return '';
-      if (name.endsWith('-impeccable') && name !== 'teach-impeccable') return name.slice(0, -'impeccable'.length);
+      if (name === 'impeccable-flutter') return '';
+      if (name.endsWith('-impeccable-flutter') && name !== 'teach-impeccable') return name.slice(0, -'impeccable-flutter'.length);
       // Legacy fallback
       if (name === 'teach-impeccable') return '';
       if (name.endsWith('-teach-impeccable')) return name.slice(0, -'teach-impeccable'.length);
@@ -536,8 +536,8 @@ async function update(flags = []) {
   const providers = findInstalledProviders(root);
 
   if (providers.length === 0) {
-    console.log('No impeccable skill folders found in this project.');
-    console.log('Run `npx impeccable skills install` to install first.');
+    console.log('No impeccable-flutter skill folders found in this project.');
+    console.log('Run `npx impeccable-flutter skills install` to install first.');
     process.exit(1);
   }
 
@@ -647,7 +647,7 @@ export async function run(args) {
     await check();
   } else {
     console.error(`Unknown skills command: ${sub}`);
-    console.error(`Run 'impeccable skills --help' for available commands.`);
+    console.error(`Run 'impeccable-flutter skills --help' for available commands.`);
     process.exit(1);
   }
 }

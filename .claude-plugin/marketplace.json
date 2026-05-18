@@ -1,8 +1,8 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "impeccable",
+  "name": "impeccable-flutter",
   "metadata": {
-    "description": "Design fluency for AI harnesses. 1 skill, 23 commands, and curated anti-patterns for impeccable frontend design."
+    "description": "Design fluency for Flutter development. 1 skill, 22 commands, and curated anti-patterns for impeccable Flutter design."
   },
   "owner": {
     "name": "Paul Bakaus",
@@ -10,8 +10,8 @@
   },
   "plugins": [
     {
-      "name": "impeccable",
-      "description": "Design fluency for frontend development. 1 skill with 23 commands (/impeccable polish, /impeccable audit, /impeccable critique, etc.) and curated anti-pattern detection.",
+      "name": "impeccable-flutter",
+      "description": "Design fluency for Flutter development. 1 skill with 22 commands (/impeccable-flutter craft, /impeccable-flutter audit, /impeccable-flutter critique, etc.) and curated anti-pattern detection.",
       "version": "3.1.1",
       "author": {
         "name": "Paul Bakaus",
@@ -20,7 +20,7 @@
       "source": "./plugin",
       "category": "design",
       "homepage": "https://impeccable.style",
-      "tags": ["design", "frontend", "ui", "ux", "skills", "commands"]
+      "tags": ["design", "flutter", "dart", "ui", "ux", "skills", "commands"]
     }
   ]
 }

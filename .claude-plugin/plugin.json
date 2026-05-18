@@ -1,12 +1,12 @@
 {
-  "name": "impeccable",
-  "description": "Design fluency for frontend development. 1 skill with 23 commands (/impeccable polish, /impeccable audit, /impeccable critique, etc.) and curated anti-pattern detection.",
+  "name": "impeccable-flutter",
+  "description": "Design fluency for Flutter development. 1 skill with 22 commands (/impeccable-flutter craft, /impeccable-flutter audit, /impeccable-flutter critique, etc.) and curated anti-pattern detection.",
   "version": "3.1.1",
   "author": {
     "name": "Paul Bakaus",
     "email": "paul@paulbakaus.com"
   },
   "homepage": "https://impeccable.style",
-  "repository": "https://github.com/pbakaus/impeccable",
+  "repository": "https://github.com/pbakaus/impeccable-flutter",
   "skills": "./.claude/skills/"
 }

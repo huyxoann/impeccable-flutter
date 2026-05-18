@@ -1,11 +1,11 @@
 # Notice
 
-Impeccable
+Impeccable Flutter
 Copyright 2025-2026 Paul Bakaus
 
 ## Anthropic frontend-design Skill
 
-The `impeccable` skill in this project builds on Anthropic's original frontend-design skill.
+The `impeccable-flutter` skill in this project builds on Anthropic's original frontend-design skill.
 
 **Original work:** https://github.com/anthropics/skills/tree/main/skills/frontend-design
 **Original license:** Apache License 2.0
@@ -13,7 +13,7 @@ The `impeccable` skill in this project builds on Anthropic's original frontend-d
 
 This project extends the original with:
 - 7 domain-specific reference files (typography, color-and-contrast, spatial-design, motion-design, interaction-design, responsive-design, ux-writing)
-- 23 commands
+- 22 commands
 - Expanded patterns and anti-patterns
 
 ## Typecraft Guide Skill

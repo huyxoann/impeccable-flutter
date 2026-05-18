@@ -198,9 +198,9 @@ Concrete, forceful guardrails. Lead each with "Do" or "Don't". Be specific: incl
 - **Don't** [specific prohibition, e.g. "use identical Card + Column grids endlessly"].
 ```
 
-### Step 4b: Write .impeccable/design.json sidecar
+### Step 4b: Write .impeccable-flutter/design.json sidecar
 
-The frontmatter owns token primitives. The sidecar at `.impeccable/design.json` carries what Stitch's schema can't hold: tonal ramps per color, breakpoints, and narrative.
+The frontmatter owns token primitives. The sidecar at `.impeccable-flutter/design.json` carries what Stitch's schema can't hold: tonal ramps per color, breakpoints, and narrative.
 
 *Note: The original Stitch format expects HTML/CSS snippets for components. For a pure Flutter project, you can either adapt the component structure to include a `dart` key instead of `html`/`css`, or omit the code snippets if they aren't consumed by a web-based panel.*
 
@@ -236,12 +236,12 @@ The frontmatter owns token primitives. The sidecar at `.impeccable/design.json` 
 ### Step 5: Confirm and refine
 
 1. Show the user the full DESIGN.md you wrote. Briefly highlight the non-obvious creative choices.
-2. Mention that `.impeccable/design.json` was also written.
+2. Mention that `.impeccable-flutter/design.json` was also written.
 3. Offer to refine any section.
 
 ## Seed mode
 
-For projects with no visual system to extract yet. Produces a minimal scaffold, not a full spec. Follow the same prompt questions as the original Impeccable (Color strategy, Typography direction, Motion energy, References, Anti-references) and generate the `<!-- SEED -->` file. No `.impeccable/design.json` sidecar is generated in seed mode.
+For projects with no visual system to extract yet. Produces a minimal scaffold, not a full spec. Follow the same prompt questions as the original Impeccable Flutter (Color strategy, Typography direction, Motion energy, References, Anti-references) and generate the `<!-- SEED -->` file. No `.impeccable-flutter/design.json` sidecar is generated in seed mode.
 
 ## Style guidelines
 

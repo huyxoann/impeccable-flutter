@@ -1,5 +1,5 @@
 ---
-name: Impeccable
+name: Impeccable Flutter
 description: Warm-paper editorial sanctuary — committed serif display, one decisive magenta, flat surfaces at rest.
 
 # Colors use OKLCH per `The OKLCH-Only Rule` in §2. Stitch's linter validates
@@ -111,13 +111,13 @@ components:
     textColor: "{colors.editorial-magenta}"
 ---
 
-# Design System: Impeccable
+# Design System: Impeccable Flutter
 
 ## 1. Overview: The Editorial Sanctuary
 
 **Creative North Star: "The Editorial Sanctuary"**
 
-The Impeccable site reads more like a printed design publication than a SaaS landing page. Committed typography, generous breathing room, and a single decisive accent that cuts through warm paper. The interface feels **considered, unhurried, and expert** — the work of someone who has made the calls a thousand times and has zero interest in chasing the current AI-tool aesthetic.
+The Impeccable Flutter site reads more like a printed design publication than a SaaS landing page. Committed typography, generous breathing room, and a single decisive accent that cuts through warm paper. The interface feels **considered, unhurried, and expert** — the work of someone who has made the calls a thousand times and has zero interest in chasing the current AI-tool aesthetic.
 
 The aesthetic philosophy is **restraint in service of craft**. Every element earns its place. Nothing is decorative without function. The palette is dominated by warm paper tones with one vibrant voice. The typography pairs a stately italic serif with a clean neutral sans. Motion is reserved for moments that actually communicate state. The site is the demo — it must pass the same anti-pattern audit it asks its users to run on their own work.
 
@@ -152,7 +152,7 @@ A two-chord palette: warm paper neutrals carrying a near-invisible magenta tint,
 - **Magenta Veil** (oklch(60% 0.25 350 / 0.25)): Slightly stronger translucent tint for focus rings and emphasis shells.
 
 ### Command Category Tints (fenced — do not extend)
-A separate six-tint vocabulary used exclusively to color-code the periodic-table visualization of impeccable's 23 commands. These tints predate the OKLCH system and live in one component. **Do not extend this vocabulary elsewhere.**
+A separate six-tint vocabulary used exclusively to color-code the periodic-table visualization of impeccable-flutter's 23 commands. These tints predate the OKLCH system and live in one component. **Do not extend this vocabulary elsewhere.**
 
 - **Create** (bg `#fdf2f8` / border `#ec4899` / text `#be185d`)
 - **Evaluate** (bg `#fdf4ff` / border `#d946ef` / text `#a21caf`)
@@ -283,7 +283,7 @@ A distinctive custom element worth documenting: the 23 commands are laid out as 
 - **Don't** use pure black (#000) or pure white (#fff). Always the tinted neutrals (Deep Graphite / Warm Ash Cream / Crisp Paper White).
 - **Don't** use `border-left` or `border-right` greater than 1px as a colored stripe on cards, list items, callouts, or alerts. Ever. This is the single most recognizable AI-dashboard tell.
 - **Don't** use `background-clip: text` with a gradient. Gradient text is banned across the site. If you want emphasis, use weight or size, never gradient fill.
-- **Don't** default to dark mode. The site is light mode because editorial reading is a light-mode activity. Dark mode with glowing accents is the AI-tool aesthetic Impeccable exists to replace.
+- **Don't** default to dark mode. The site is light mode because editorial reading is a light-mode activity. Dark mode with glowing accents is the AI-tool aesthetic Impeccable Flutter exists to replace.
 - **Don't** use glassmorphism (blurred translucent cards, glass borders, glow backgrounds as decoration). It is on PRODUCT.md's explicit anti-reference list.
 - **Don't** add a second accent color. If a layout "needs" a second emphasis point, use scale or weight, not hue.
 - **Don't** use rounded rectangles with generic drop shadows. That's the "could be any AI output" fingerprint.
