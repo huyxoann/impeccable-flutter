@@ -1346,13 +1346,23 @@ function checkQuality(opts) {
   }
 
   // --- Wide letter spacing on body text ---
-  if (hasDirectText && textLen > 20 && style.textTransform !== 'uppercase') {
+  if (rect && hasDirectText && textLen > 20 && style.textTransform !== 'uppercase') {
     if (letterSpacingPx != null && letterSpacingPx > 0 && fontSize > 0) {
       const trackingEm = letterSpacingPx / fontSize;
       if (trackingEm > 0.05) {
         findings.push({ id: 'wide-tracking', snippet: `letter-spacing: ${trackingEm.toFixed(2)}em on body text` });
       }
     }
+  }
+
+  // --- GPT slop: Thin border + soft shadow ---
+  const gptSlop = checkGPTBorderAndShadow(el, style, typeof window !== 'undefined' ? window : null);
+  if (gptSlop.length) findings.push(...gptSlop);
+
+  // --- AI-isms / Prose slop ---
+  if (hasDirectText) {
+    const proseSlop = checkProse(el.textContent);
+    if (proseSlop.length) findings.push(...proseSlop);
   }
 
   return findings;
@@ -1808,6 +1818,63 @@ function isCardLike(el, win) {
     /background(?:-color)?\s*:\s*(?!transparent)/i.test(rawStyle);
 
   return isCardLikeFromProps(hasShadow, hasBorder, hasRadius, hasBg);
+}
+
+const BANNED_AI_ISMS = [
+  'powerful', 'seamless', 'robust', 'comprehensive', 'dive in',
+  'at its core', 'look no further', 'elevate', 'unlock', 'leverage',
+  'groundbreaking', 'game-changer', 'cutting-edge', 'solution',
+  'world-class', 'innovation', 'reimagine', 'transformative',
+];
+
+const THROAT_CLEARING_RE = /^(?:in this guide|let's dive in|it's important to note|in today's|as we've seen|to wrap up|in conclusion)/i;
+
+function checkProse(text) {
+  if (!text || text.length < 10) return [];
+  const findings = [];
+  const lowerText = text.toLowerCase();
+
+  for (const word of BANNED_AI_ISMS) {
+    if (lowerText.includes(word)) {
+      findings.push({ id: 'ai-slop-prose', snippet: `Banned word: "${word}" in "${text.slice(0, 50)}..."` });
+    }
+  }
+
+  if (THROAT_CLEARING_RE.test(text.trim())) {
+    findings.push({ id: 'throat-clearing', snippet: `Throat-clearing opener in "${text.slice(0, 50)}..."` });
+  }
+
+  return findings;
+}
+
+function checkGPTBorderAndShadow(el, style, win) {
+  const cls = el.getAttribute?.('class') || '';
+  const rawStyle = el.getAttribute?.('style') || '';
+  const boxShadow = style.boxShadow || '';
+  
+  const hasThinBorder = (parseFloat(style.borderWidth) > 0 && parseFloat(style.borderWidth) <= 1) ||
+    /\bborder(?:-[trbl])?\b/.test(cls) || /border\s*:\s*(?:1px|0\.\d+px)/i.test(rawStyle);
+    
+  if (!hasThinBorder) return [];
+
+  // Detect wide, soft, low-opacity shadows typical of LLM "premium" look
+  // Example: 0 10px 30px rgba(0,0,0,0.05)
+  const shadowParts = boxShadow.split(',')[0].trim().split(/\s+/);
+  if (shadowParts.length >= 4) {
+    const blur = parseFloat(shadowParts[2]);
+    const spread = parseFloat(shadowParts[3]) || 0;
+    if (blur >= 20 && spread <= 5) {
+      // Check opacity if it's rgba/hsla
+      if (boxShadow.includes('rgba') || boxShadow.includes('hsla')) {
+        const opacityMatch = boxShadow.match(/0\.\d+/);
+        if (opacityMatch && parseFloat(opacityMatch[0]) <= 0.15) {
+          return [{ id: 'gpt-border-and-shadow', snippet: 'Thin border + soft low-opacity shadow (GPT slop)' }];
+        }
+      }
+    }
+  }
+
+  return [];
 }
 
 function checkPageLayout(doc, win) {

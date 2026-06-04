@@ -2,18 +2,26 @@
 
 The vocabulary you didn't know you needed. 1 skill, 22 commands, and curated anti-patterns for impeccable Flutter design.
 
+**Impeccable Flutter** is a specialized version of the original [Impeccable](https://github.com/pbakaus/impeccable) project, adapted specifically for the Flutter and Dart ecosystem. It brings the same high-signal design guidance and anti-pattern detection to mobile, desktop, and web apps built with Flutter.
+
 > **Quick start:** Visit [impeccable.style](https://impeccable.style) to download ready-to-use bundles.
 
-## Why Impeccable Flutter?
+## Credits & Inspiration
 
-Anthropic's [frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) was the first widely-used design skill for Claude. Impeccable Flutter started from there.
+This project is a fork and adaptation of **[Impeccable](https://github.com/pbakaus/impeccable)** by **[Paul Bakaus](https://github.com/pbakaus)**. 
+
+While the original Impeccable focuses on the web (HTML/CSS), Impeccable Flutter extends these principles to the unique world of Flutter widgets, `ThemeData`, and declarative UI. We owe a massive debt to the original project for its foundational design laws, the "AI slop" test, and the core command structure.
+
+The project also builds on [Anthropic's original frontend-design skill](https://github.com/anthropics/skills/tree/main/skills/frontend-design). See [NOTICE.md](NOTICE.md) for full attribution.
+
+## Why Impeccable Flutter?
 
 Every model trained on the same SaaS templates. Skip the guidance and you get the same handful of tells on every project: Inter for everything, purple-to-blue gradients, cards nested in cards, gray text on colored backgrounds, the rounded-square icon tile above every heading.
 
 Impeccable Flutter adds:
 - **7 domain reference files** ([view source](skill/)). Typography, color, motion, spatial, interaction, responsive, UX writing. Load on every command, alongside a brand-vs-product register that adjusts the defaults.
 - **22 commands.** A shared design vocabulary with your AI: `polish`, `audit`, `critique`, `distill`, `animate`, `bolder`, `quieter`, and more.
-- **29 deterministic anti-pattern rules** plus a 12-rule LLM critique pass. CLI and browser extension run the deterministic ones with no LLM and no API key. Each is tied to specific design guidance the skill teaches against.
+- **29+ deterministic anti-pattern rules** plus a 12-rule LLM critique pass. CLI and browser extension run the deterministic ones with no LLM and no API key. Each is tied to specific design guidance the skill teaches against.
 
 ## What's Included
 
@@ -38,7 +46,7 @@ All commands are accessed through `/impeccable-flutter`:
 | Command | What it does |
 |---------|--------------|
 | `/impeccable-flutter craft` | Full shape-then-build flow with visual iteration |
-| `/impeccable-flutter teach` | One-time setup: gather design context, write root PRODUCT.md and DESIGN.md |
+| `/impeccable-flutter init` | One-time setup: gather design context, write root PRODUCT.md and DESIGN.md |
 | `/impeccable-flutter document` | Generate root DESIGN.md from existing project code |
 | `/impeccable-flutter extract` | Pull reusable components and tokens into the design system |
 | `/impeccable-flutter shape` | Plan UX/UI before writing code |
@@ -65,7 +73,7 @@ Use `/impeccable-flutter pin <command>` to create standalone shortcuts (e.g., `p
 #### Usage Examples
 
 ```
-/impeccable-flutter audit blog           # Audit blog hub + post pages
+/impeccable-flutter audit lib/           # Audit Flutter project
 /impeccable-flutter critique landing     # UX design review
 /impeccable-flutter polish settings      # Final pass before shipping
 /impeccable-flutter harden checkout      # Add error handling + edge cases
@@ -80,15 +88,15 @@ Or use `/impeccable-flutter` directly with a description:
 
 The skill includes explicit guidance on what to avoid:
 
-- Don't use overused fonts (Arial, Inter, system defaults)
-- Don't use gray text on colored backgrounds
-- Don't use pure black/gray (always tint)
-- Don't wrap everything in cards or nest cards inside cards
-- Don't use bounce/elastic easing (feels dated)
+- **The "AI Slop" test:** Rejects designs that look generic or machine-generated.
+- **No overused fonts:** Flags Inter, Roboto, and system defaults.
+- **Banned Prose:** Flags AI-isms like "powerful", "seamless", and "robust".
+- **GPT Shadow Slop:** Flags thin borders combined with wide, soft, low-opacity shadows.
+- **No Card Soup:** Rejects wrapping everything in cards or nesting cards.
 
 ## See It In Action
 
-Visit [impeccable.style](https://impeccable.style#casestudies) to see before/after case studies of real projects transformed with Impeccable Flutter commands.
+Visit [impeccable.style](https://impeccable.style#casestudies) to see before/after case studies of real projects transformed with Impeccable commands.
 
 ## Installation
 
@@ -107,13 +115,12 @@ Visit [impeccable.style](https://impeccable.style), download the ZIP for your to
 Impeccable Flutter includes a standalone CLI for detecting anti-patterns without an AI harness:
 
 ```bash
-npx impeccable-flutter detect src/                   # scan a directory
-npx impeccable-flutter detect index.html             # scan an HTML file
+npx impeccable-flutter detect lib/                  # scan a directory
 npx impeccable-flutter detect https://example.com    # scan a URL (Puppeteer)
 npx impeccable-flutter detect --fast --json .        # regex-only, JSON output
 ```
 
-The detector catches 29 issues across AI slop (side-tab borders, purple gradients, bounce easing, dark glows) and general design quality (line length, cramped padding, small touch targets, skipped headings, and more).
+The detector catches 30+ issues across AI slop (GPT shadows, side-tab borders, purple gradients, bounce easing, prose rules) and general design quality (line length, cramped padding, small touch targets, and more).
 
 ## Supported Tools
 
@@ -132,8 +139,6 @@ See [DEVELOP.md](DEVELOP.md) for contributor guidelines and build instructions.
 
 Apache 2.0. See [LICENSE](LICENSE).
 
-The impeccable-flutter skill builds on [Anthropic's original frontend-design skill](https://github.com/anthropics/skills/tree/main/skills/frontend-design). See [NOTICE.md](NOTICE.md) for attribution.
-
 ---
 
-Created by [Paul Bakaus](https://www.paulbakaus.com)
+Based on the original [Impeccable](https://github.com/pbakaus/impeccable) by [Paul Bakaus](https://www.paulbakaus.com)

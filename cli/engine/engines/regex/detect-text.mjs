@@ -124,6 +124,17 @@ const REGEX_MATCHERS = [
       const found = m[1].match(/\b(?:(?:max|min)-)?(?:width|height)\b|\bpadding(?:-(?:top|right|bottom|left))?\b|\bmargin(?:-(?:top|right|bottom|left))?\b/gi);
       return `transition-property: ${found ? found.join(', ') : m[1].trim()}`;
     } },
+  // --- AI-isms / Prose slop ---
+  { id: 'ai-slop-prose', regex: /\b(powerful|seamless|robust|comprehensive|dive in|at its core|look no further|elevate|unlock|leverage|groundbreaking|game-changer|cutting-edge|solution|world-class|innovation|reimagine|transformative)\b/gi,
+    test: () => true,
+    fmt: (m) => `Banned word: "${m[1]}"` },
+  { id: 'throat-clearing', regex: /^(?:in this guide|let's dive in|it's important to note|in today's|as we've seen|to wrap up|in conclusion)/i,
+    test: () => true,
+    fmt: (m) => `Throat-clearing opener: "${m[0]}"` },
+  // --- GPT slop: Thin border + soft shadow ---
+  { id: 'gpt-border-and-shadow', regex: /box-shadow\s*:\s*0\s+\d+px\s+\d{2,}px\s+rgba\(\d+,\s*\d+,\s*\d+,\s*0\.(?:0\d|1[0-5])\)/gi,
+    test: (m, line) => /border\s*:\s*(?:1px|0\.\d+px)/i.test(line),
+    fmt: () => 'Thin border + soft low-opacity shadow (GPT slop)' },
 ];
 
 const REGEX_ANALYZERS = [

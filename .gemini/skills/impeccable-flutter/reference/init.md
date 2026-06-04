@@ -1,4 +1,4 @@
-# Teach Flow
+# Init Flow
 
 Gathers design context for a project and writes two complementary files at the project root:
 
@@ -12,7 +12,7 @@ Every other impeccable-flutter command reads these files before doing any work.
 Run the shared loader first so you know what already exists:
 
 ```bash
-node .trae/skills/impeccable-flutter/scripts/load-context.mjs
+node .gemini/skills/impeccable-flutter/scripts/load-context.mjs
 ```
 
 The output tells you whether PRODUCT.md and/or DESIGN.md already exist. If `migrated: true`, legacy `.impeccable-flutter.md` was auto-renamed to `PRODUCT.md`. Mention this once to the user.
@@ -26,7 +26,7 @@ Decision tree:
 
 Never silently overwrite an existing file. Always confirm first.
 
-If teach was invoked as a setup blocker by another command, such as `$impeccable-flutter craft landing page`, pause that command here. Complete teach, re-run the loader, then resume the original command with the freshly loaded context. For craft, resume into shape next; teach creates project context, but it is not a substitute for the task-specific shape interview and confirmed design brief.
+If teach was invoked as a setup blocker by another command, such as `$impeccable-flutter craft landing page`, pause that command here. Complete init, re-run the loader, then resume the original command with the freshly loaded context. For craft, resume into shape next; init creates project context, but it is not a substitute for the task-specific shape interview and confirmed design brief.
 
 ## Step 2: Explore the codebase
 
@@ -149,8 +149,8 @@ Summarize:
 - The 3-5 strategic principles from PRODUCT.md that will guide future work
 - If DESIGN.md is pending, remind the user how to generate it later
 
-**Critical: re-run the loader to refresh session context.** After writing PRODUCT.md, run `node .trae/skills/impeccable-flutter/scripts/load-context.mjs` one final time and let its full JSON output land in conversation. This ensures subsequent commands in this session use the freshly-written PRODUCT.md, not a stale earlier version.
+**Critical: re-run the loader to refresh session context.** After writing PRODUCT.md, run `node .gemini/skills/impeccable-flutter/scripts/load-context.mjs` one final time and let its full JSON output land in conversation. This ensures subsequent commands in this session use the freshly-written PRODUCT.md, not a stale earlier version.
 
-If teach was invoked as a blocker by another impeccable-flutter command (e.g. the user ran `$impeccable-flutter polish` with no PRODUCT.md), resume that original task now with the fresh context.
+If init was invoked as a blocker by another impeccable-flutter command (e.g. the user ran `$impeccable-flutter polish` with no PRODUCT.md), resume that original task now with the fresh context.
 
 Optionally STOP and use Codex's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask whether they'd like a brief summary of PRODUCT.md appended to AGENTS.md for easier agent reference. If yes, append a short **Design Context** pointer section there.
