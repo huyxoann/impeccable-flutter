@@ -14,7 +14,7 @@ import {
   getLegacyLiveSessionsDir,
   getLiveAnnotationsDir,
   getLiveSessionsDir,
-} from '../skill/scripts/impeccable-paths.mjs';
+} from '../skill/scripts/impeccable-flutter-paths.mjs';
 
 describe('live-session-store', () => {
   let tmp;

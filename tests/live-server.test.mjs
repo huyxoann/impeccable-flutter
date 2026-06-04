@@ -15,7 +15,7 @@ import {
   getLegacyLiveSessionsDir,
   getLiveServerPath,
   getLiveSessionsDir,
-} from '../skill/scripts/impeccable-paths.mjs';
+} from '../skill/scripts/impeccable-flutter-paths.mjs';
 
 const REPO_ROOT = process.cwd();
 const SERVER_SCRIPT = join(REPO_ROOT, 'skill/scripts/live-server.mjs');
