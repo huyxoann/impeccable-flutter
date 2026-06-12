@@ -149,7 +149,7 @@ Plus two management commands: `pin <command>` and `unpin <command>`, detailed be
 
 Setup (context gathering, register) is already loaded by then; sub-commands don't re-invoke `$impeccable-flutter`.
 
-If the first word is `craft`, setup still runs first, but [reference/craft.md](reference/craft.md) owns the rest of the flow. If setup invokes `teach` as a blocker, finish init, refresh context, then resume the original command and target.
+If the first word is `craft`, setup still runs first, but [reference/craft.md](reference/craft.md) owns the rest of the flow. If setup invokes `init` as a blocker, finish init, refresh context, then resume the original command and target.
 
 ## Pin / Unpin
 

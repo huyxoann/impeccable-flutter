@@ -26,7 +26,7 @@ Decision tree:
 
 Never silently overwrite an existing file. Always confirm first.
 
-If teach was invoked as a setup blocker by another command, such as `$impeccable-flutter craft landing page`, pause that command here. Complete init, re-run the loader, then resume the original command with the freshly loaded context. For craft, resume into shape next; init creates project context, but it is not a substitute for the task-specific shape interview and confirmed design brief.
+If init was invoked as a setup blocker by another command, such as `$impeccable-flutter craft landing page`, pause that command here. Complete init, re-run the loader, then resume the original command with the freshly loaded context. For craft, resume into shape next; init creates project context, but it is not a substitute for the task-specific shape interview and confirmed design brief.
 
 ## Step 2: Explore the codebase
 
@@ -154,3 +154,4 @@ Summarize:
 If init was invoked as a blocker by another impeccable-flutter command (e.g. the user ran `$impeccable-flutter polish` with no PRODUCT.md), resume that original task now with the fresh context.
 
 Optionally STOP and use Codex's structured user-input/question tool when available; if unavailable, ask directly in chat to clarify what you cannot infer. Ask whether they'd like a brief summary of PRODUCT.md appended to AGENTS.md for easier agent reference. If yes, append a short **Design Context** pointer section there.
+

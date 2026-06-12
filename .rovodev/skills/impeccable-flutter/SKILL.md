@@ -3,7 +3,7 @@ name: impeccable-flutter
 description: Use when the user wants to design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, or otherwise improve a Flutter frontend interface. Covers mobile, desktop, and web apps, app shells, components, forms, settings, onboarding, and empty states. Handles UX review, visual hierarchy, information architecture, cognitive load, accessibility, performance, responsive behavior, theming, anti-patterns, typography, fonts, spacing, layout, alignment, color, motion, micro-interactions, UX copy, error states, edge cases, i18n, and reusable design systems or tokens in Dart/Flutter.
 version: 3.1.1
 user-invocable: true
-argument-hint: craft|teach|document|extract|live|adapt|animate|audit|bolder|clarify|colorize|critique|delight|distill|harden|onboard|layout|optimize|overdrive|polish|quieter|shape|typeset
+argument-hint: craft|init|document|extract|live|adapt|animate|audit|bolder|clarify|colorize|critique|delight|distill|harden|onboard|layout|optimize|overdrive|polish|quieter|shape|typeset
 ---
 
 Designs and iterates production-grade frontend interfaces. Real working code, committed design choices, exceptional craft.
@@ -152,7 +152,7 @@ Plus two management commands: `pin <command>` and `unpin <command>`, detailed be
 
 Setup (context gathering, register) is already loaded by then; sub-commands don't re-invoke `$impeccable-flutter`.
 
-If the first word is `craft`, setup still runs first, but [reference/craft.md](reference/craft.md) owns the rest of the flow. If setup invokes `teach` as a blocker, finish init, refresh context, then resume the original command and target.
+If the first word is `craft`, setup still runs first, but [reference/craft.md](reference/craft.md) owns the rest of the flow. If setup invokes `init` as a blocker, finish init, refresh context, then resume the original command and target.
 
 ## Pin / Unpin
 

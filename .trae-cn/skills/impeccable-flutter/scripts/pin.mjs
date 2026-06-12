@@ -26,13 +26,13 @@ const HARNESS_DIRS = [
 ];
 
 // Valid sub-command names
-const VALID_COMMANDS = [
-  'craft', 'teach', 'extract', 'document', 'shape',
-  'critique', 'audit',
-  'polish', 'bolder', 'quieter', 'distill', 'harden', 'onboard', 'live',
-  'animate', 'colorize', 'typeset', 'layout', 'delight', 'overdrive',
-  'clarify', 'adapt', 'optimize',
-];
+const VALID_COMMANDS = new Set([
+  'craft', 'init', 'extract', 'document', 'shape',
+  'critique', 'audit', 'polish', 'bolder', 'quieter',
+  'distill', 'harden', 'onboard', 'animate', 'colorize',
+  'typeset', 'layout', 'delight', 'overdrive', 'clarify',
+  'adapt', 'optimize'
+]);
 
 // Marker to identify pinned skills (so unpin doesn't delete user skills)
 const PIN_MARKER = '<!-- impeccable-flutter-pinned-skill -->';

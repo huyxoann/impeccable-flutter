@@ -174,6 +174,7 @@ async function build() {
   if (fs.existsSync(claudeSkillsSrc)) {
     fs.mkdirSync(pluginSkillsDir, { recursive: true });
     copyDirSync(claudeSkillsSrc, path.join(pluginSkillsDir, 'impeccable-flutter'));
+
   }
 
   if (fs.existsSync(claudeAgentsSrc)) {
