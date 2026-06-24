@@ -21,6 +21,7 @@ export const PROVIDERS = {
     displayName: 'Claude Code',
     frontmatterFields: ['user-invocable', 'argument-hint', 'license', 'compatibility', 'metadata', 'allowed-tools'],
     agentFormat: 'claude-md',
+    fanOutCommands: true,
   },
   gemini: {
     provider: 'gemini',

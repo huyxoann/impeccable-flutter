@@ -170,11 +170,10 @@ async function build() {
     JSON.stringify(pluginManifest, null, 2) + '\n',
   );
 
-  const claudeSkillsSrc = path.join(DIST_DIR, 'claude-code', '.claude', 'skills', 'impeccable-flutter');
+  const claudeSkillsSrc = path.join(DIST_DIR, 'claude-code', '.claude', 'skills');
   if (fs.existsSync(claudeSkillsSrc)) {
     fs.mkdirSync(pluginSkillsDir, { recursive: true });
-    copyDirSync(claudeSkillsSrc, path.join(pluginSkillsDir, 'impeccable-flutter'));
-
+    copyDirSync(claudeSkillsSrc, pluginSkillsDir);
   }
 
   if (fs.existsSync(claudeAgentsSrc)) {

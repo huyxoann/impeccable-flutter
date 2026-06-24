@@ -198,10 +198,63 @@ export function createTransformer(config) {
       // Replace {{scripts_path}} with provider-aware path to skill's scripts directory
       const scriptsPath = `${configDir}/skills/${skillName}/scripts`;
       skillBody = skillBody.replace(/\{\{scripts_path\}\}/g, scriptsPath);
+      if (provider === 'claude-code') {
+        skillBody = skillBody.replace(
+          new RegExp(`node ${scriptsPath.replace(/\./g, '\\.')}/([a-zA-Z0-9_-]+\\.mjs)`, 'g'),
+          `# Claude Code plugins run from a global cache. Replace the relative path below\n# with the absolute path to this plugin's scripts directory before running.\nnode ${scriptsPath}/$1`
+        );
+      }
+      
       if (bodyTransform) skillBody = bodyTransform(skillBody, skill);
 
       const content = `${frontmatter}\n\n${skillBody}`;
       writeFile(path.join(skillDir, 'SKILL.md'), content);
+
+      // --- FAN-OUT COMMANDS LOGIC ---
+      if (config.fanOutCommands && skill.scripts) {
+        const metaScript = skill.scripts.find(s => s.name === 'command-metadata.json');
+        if (metaScript) {
+          const metadata = JSON.parse(metaScript.content);
+          for (const [cmdName, cmdMeta] of Object.entries(metadata)) {
+            const fannedOutDir = path.join(skillsDir, cmdName);
+            ensureDir(fannedOutDir);
+            
+            // Build frontmatter for fanned out skill
+            const foFrontmatterObj = {
+              name: cmdName,
+              description: cmdMeta.description,
+            };
+            if (skillsVersion && includeVersion) foFrontmatterObj.version = skillsVersion;
+            
+            // Apply active fields from the main skill
+            for (const spec of activeFields) {
+              if (spec.yamlKey === 'argument-hint') {
+                if (cmdMeta.argumentHint) {
+                  foFrontmatterObj['argument-hint'] = cmdMeta.argumentHint;
+                }
+              } else if (spec.yamlKey === 'user-invocable') {
+                foFrontmatterObj['user-invocable'] = true;
+              } else {
+                if (spec.condition && !spec.condition(skill)) continue;
+                const val = spec.value ? spec.value(skill) : skill[spec.sourceKey];
+                if (val) foFrontmatterObj[spec.yamlKey] = val;
+              }
+            }
+            
+            const foFrontmatter = generateYamlFrontmatter(foFrontmatterObj);
+            
+            // Build body for fanned out skill
+            const ref = skill.references?.find(r => r.name === cmdName);
+            let foRefContent = ref ? ref.content : '';
+            foRefContent = replacePlaceholders(foRefContent, placeholderKey, [], allSkillNames);
+            foRefContent = foRefContent.replace(/\{\{scripts_path\}\}/g, scriptsPath);
+            
+            const foContent = `${foFrontmatter}\n\n${skillBody}\n\n## Specific Instructions: ${cmdName}\n\n${foRefContent}`;
+            writeFile(path.join(fannedOutDir, 'SKILL.md'), foContent);
+          }
+        }
+      }
+      // --- END FAN-OUT LOGIC ---
 
       if (writeOpenAIMetadata) {
         const openaiMetadata = buildOpenAIMetadata(skill);

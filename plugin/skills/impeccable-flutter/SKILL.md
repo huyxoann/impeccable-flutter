@@ -28,6 +28,8 @@ Two files, case-insensitive. The loader looks at the project root by default and
 Load both in one call:
 
 ```bash
+# Claude Code plugins run from a global cache. Replace the relative path below
+# with the absolute path to this plugin's scripts directory before running.
 node .claude/skills/impeccable-flutter/scripts/load-context.mjs
 ```
 
@@ -159,12 +161,16 @@ If the first word is `craft`, setup still runs first, but [reference/craft.md](r
 **Pin** creates a standalone shortcut so `$<command>` invokes `$impeccable-flutter <command>` directly. **Unpin** removes it. The script writes to every harness directory present in the project.
 
 ```bash
+# Claude Code plugins run from a global cache. Replace the relative path below
+# with the absolute path to this plugin's scripts directory before running.
 node .claude/skills/impeccable-flutter/scripts/pin.mjs <pin|unpin> <command>
 ```
 
 Valid `<command>` is any command from the table above. Report the script's result concisely. Confirm the new shortcut on success, relay stderr verbatim on error.in** removes it. The script writes to every harness directory present in the project.
 
 ```bash
+# Claude Code plugins run from a global cache. Replace the relative path below
+# with the absolute path to this plugin's scripts directory before running.
 node .claude/skills/impeccable-flutter/scripts/pin.mjs <pin|unpin> <command>
 ```
 
