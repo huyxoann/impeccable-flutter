@@ -32,10 +32,10 @@ describe('impeccable project paths', () => {
     rmSync(tmp, { recursive: true, force: true });
   });
 
-  it('resolves the generated design sidecar under .impeccable', () => {
-    assert.equal(getDesignSidecarPath(tmp), join(tmp, '.impeccable', 'design.json'));
+  it('resolves the generated design sidecar under .impeccable-flutter', () => {
+    assert.equal(getDesignSidecarPath(tmp), join(tmp, '.impeccable-flutter', 'design.json'));
 
-    mkdirSync(join(tmp, '.impeccable'), { recursive: true });
+    mkdirSync(join(tmp, '.impeccable-flutter'), { recursive: true });
     writeFileSync(join(tmp, 'DESIGN.json'), '{"source":"legacy"}');
     writeFileSync(getDesignSidecarPath(tmp), '{"source":"new"}');
 
@@ -49,7 +49,7 @@ describe('impeccable project paths', () => {
     assert.equal(resolveDesignSidecarPath(tmp), legacyPath);
   });
 
-  it('uses .impeccable/live/config.json as the default live config path', () => {
+  it('uses .impeccable-flutter/live/config.json as the default live config path', () => {
     assert.equal(resolveLiveConfigPath({ cwd: tmp, scriptsDir: join(tmp, 'scripts'), env: {} }), getLiveConfigPath(tmp));
   });
 
@@ -64,7 +64,7 @@ describe('impeccable project paths', () => {
 
   it('lets IMPECCABLE_LIVE_CONFIG override both new and legacy config locations', () => {
     const override = join(tmp, 'custom-live-config.json');
-    mkdirSync(join(tmp, '.impeccable', 'live'), { recursive: true });
+    mkdirSync(join(tmp, '.impeccable-flutter', 'live'), { recursive: true });
     writeFileSync(getLiveConfigPath(tmp), '{"source":"new"}');
     writeFileSync(override, '{"source":"override"}');
 
@@ -74,14 +74,14 @@ describe('impeccable project paths', () => {
     );
   });
 
-  it('places live server, session, and annotation state under .impeccable/live', () => {
-    assert.equal(getLiveServerPath(tmp), join(tmp, '.impeccable', 'live', 'server.json'));
-    assert.equal(getLiveSessionsDir(tmp), join(tmp, '.impeccable', 'live', 'sessions'));
-    assert.equal(getLiveAnnotationsDir(tmp), join(tmp, '.impeccable', 'live', 'annotations'));
+  it('places live server, session, and annotation state under .impeccable-flutter/live', () => {
+    assert.equal(getLiveServerPath(tmp), join(tmp, '.impeccable-flutter', 'live', 'server.json'));
+    assert.equal(getLiveSessionsDir(tmp), join(tmp, '.impeccable-flutter', 'live', 'sessions'));
+    assert.equal(getLiveAnnotationsDir(tmp), join(tmp, '.impeccable-flutter', 'live', 'annotations'));
   });
 
   it('reads new live server state before legacy recovery state', () => {
-    mkdirSync(join(tmp, '.impeccable', 'live'), { recursive: true });
+    mkdirSync(join(tmp, '.impeccable-flutter', 'live'), { recursive: true });
     writeFileSync(getLiveServerPath(tmp), JSON.stringify({ port: 8401, token: 'new' }));
     writeFileSync(getLegacyLiveServerPath(tmp), JSON.stringify({ port: 8400, token: 'legacy' }));
 
