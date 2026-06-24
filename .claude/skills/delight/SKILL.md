@@ -1,7 +1,7 @@
 ---
 name: delight
 description: Add moments of joy, personality, and unexpected touches that make interfaces memorable and enjoyable to use. Elevates functional to delightful. Use when the user asks to add polish, personality, animations, micro-interactions, delight, or make an interface feel fun or memorable.
-version: 3.1.1
+version: 3.1.2
 user-invocable: true
 argument-hint: "[target]"
 ---

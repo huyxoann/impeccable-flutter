@@ -1,7 +1,7 @@
 ---
 name: distill
 description: Strip designs to their essence by removing unnecessary complexity. Great design is simple, powerful, and clean. Use when the user asks to simplify, declutter, reduce noise, remove elements, or make a UI cleaner and more focused.
-version: 3.1.1
+version: 3.1.2
 user-invocable: true
 argument-hint: "[target]"
 ---

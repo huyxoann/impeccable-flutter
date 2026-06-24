@@ -1,7 +1,7 @@
 ---
 name: impeccable-flutter
 description: Use when the user wants to design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, or otherwise improve a Flutter frontend interface. Covers mobile, desktop, and web apps, app shells, components, forms, settings, onboarding, and empty states. Handles UX review, visual hierarchy, information architecture, cognitive load, accessibility, performance, responsive behavior, theming, anti-patterns, typography, fonts, spacing, layout, alignment, color, motion, micro-interactions, UX copy, error states, edge cases, i18n, and reusable design systems or tokens in Dart/Flutter.
-version: 3.1.1
+version: 3.1.2
 user-invocable: true
 argument-hint: craft|init|document|extract|live|adapt|animate|audit|bolder|clarify|colorize|critique|delight|distill|harden|onboard|layout|optimize|overdrive|polish|quieter|shape|typeset
 ---

@@ -1,7 +1,7 @@
 ---
 name: animate
 description: Review a feature and enhance it with purposeful animations, micro-interactions, and motion effects that improve usability and delight. Use when the user mentions adding animation, transitions, micro-interactions, motion design, hover effects, or making the UI feel more alive.
-version: 3.1.1
+version: 3.1.2
 user-invocable: true
 argument-hint: "[target]"
 ---

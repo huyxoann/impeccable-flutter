@@ -1,7 +1,7 @@
 ---
 name: extract
 description: Pull reusable patterns, components, and design tokens into the design system. Identifies repeated patterns and consolidates them. Use when you have drift across the codebase and want to bring things back to a consistent system.
-version: 3.1.1
+version: 3.1.2
 user-invocable: true
 argument-hint: "[target]"
 ---

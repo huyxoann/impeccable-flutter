@@ -1,7 +1,7 @@
 ---
 name: harden
 description: "Make interfaces production-ready: error handling, i18n, text overflow, edge case management, and resilience under real-world data. Use when the user asks to harden, make production-ready, handle edge cases, add error states, or fix overflow and i18n issues."
-version: 3.1.1
+version: 3.1.2
 user-invocable: true
 argument-hint: "[target]"
 ---

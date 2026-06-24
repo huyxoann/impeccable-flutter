@@ -1,7 +1,7 @@
 ---
 name: shape
 description: Plan UX and UI before code. Runs a required multi-round discovery interview, uses visual probes when available, and produces a user-confirmed design brief for implementation.
-version: 3.1.1
+version: 3.1.2
 user-invocable: true
 argument-hint: "[feature to shape]"
 ---

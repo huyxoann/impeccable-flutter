@@ -1,7 +1,7 @@
 ---
 name: craft
 description: Full confirmed-brief-then-build flow. Runs multi-round shape discovery first, resolves visual probe and north-star mock gates when available, then builds and visually iterates. Use when building a new feature end-to-end.
-version: 3.1.1
+version: 3.1.2
 user-invocable: true
 argument-hint: "[feature description]"
 ---
