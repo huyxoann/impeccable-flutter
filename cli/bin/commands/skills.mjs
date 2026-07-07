@@ -341,7 +341,7 @@ async function install(flags) {
     // directories have meaningfully different per-provider content (frontmatter,
     // command prefix, paths), and the default symlink also fails silently when
     // .claude/ doesn't exist yet or on Windows without elevated privileges (#140).
-    execSync(`npx skills add pbakaus/impeccable-flutter --copy${yes ? ' -y' : ''}`, { stdio: 'inherit' });
+    execSync(`npx skills add huyxoann/impeccable-flutter --copy${yes ? ' -y' : ''}`, { stdio: 'inherit' });
   } catch (e) {
     process.exit(e.status ?? 1);
   }
