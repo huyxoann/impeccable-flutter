@@ -4,9 +4,18 @@ import path from 'node:path';
 export const IMPECCABLE_DIR = '.impeccable-flutter';
 export const LIVE_DIR = 'live';
 export const CRITIQUE_DIR = 'critique';
+export const PREVIEW_DIR = 'preview';
 
 export function getImpeccableDir(cwd = process.cwd()) {
   return path.join(cwd, IMPECCABLE_DIR);
+}
+
+export function getPreviewDir(cwd = process.cwd()) {
+  return path.join(getImpeccableDir(cwd), PREVIEW_DIR);
+}
+
+export function getPreviewEntryPath(cwd = process.cwd()) {
+  return path.join(getPreviewDir(cwd), 'index.html');
 }
 
 export function getDesignSidecarPath(cwd = process.cwd()) {

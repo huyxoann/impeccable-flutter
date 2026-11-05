@@ -1,0 +1,201 @@
+#!/bin/sh
+# Impeccable Flutter hybrid launcher (v4.8.0 Engine + Flutter Web Preview Stage).
+#
+# - Routes Flutter Live Web Preview Stage verbs (`live`, `live-poll`, `live-wrap`,
+#   `live-accept`, `live-status`, `live-resume`, `live-complete`, `live-inject`,
+#   `live-server`, `live-generate`, `pin`) to the Node-based `.impeccable-flutter/preview`
+#   scripts in this directory.
+# - Routes `context` to the v4.8.0 Rust engine binary + appends the Flutter
+#   Web Preview Stage & Clean Architecture directive when `pubspec.yaml` exists.
+# - Routes all other v4.8.0 verbs (`concept-seed`, `serve-question`, `doctor`,
+#   `hooks`, `comp-spec`, `comp-diff`, `surface-brief`, `critique-storage`,
+#   `palette`, `component-review`, `detect`, `ignores`, `signals`,
+#   `generate-image`, `embed-prompt`, `font-match`, `build-phase`, `engine-probe`)
+#   directly to the v4.8.0 Rust engine binary (`<this dir>/bin/<os>-<arch>/impeccable`
+#   or `~/.impeccable/bin/<version>/impeccable`).
+set -eu
+
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+[ -x "$0" ] || chmod +x "$0" 2>/dev/null || :
+manifest="$dir/engine-checksums.txt"
+
+: "${IMPECCABLE_SKILL_DIR:=$(CDPATH= cd -- "$dir/.." && pwd)}"
+: "${IMPECCABLE_SELF:=$0}"
+export IMPECCABLE_SKILL_DIR IMPECCABLE_SELF
+
+verb="${1:-}"
+mapped=""
+case "$verb" in
+  live|live-poll|live-wrap|live-accept|live-status|live-resume|live-complete|live-inject|live-server|live-generate|pin)
+    mapped="$verb"
+    ;;
+  poll|wrap|accept|status|resume|complete|inject|generate)
+    mapped="live-$verb"
+    ;;
+esac
+
+if [ -n "$mapped" ] && [ -f "$dir/$mapped.mjs" ] && command -v node >/dev/null 2>&1; then
+  shift
+  exec node "$dir/$mapped.mjs" "$@"
+fi
+
+probe_ok() {
+  probe_out=$(IMPECCABLE_LAUNCHER_PROBE=1 "$1" engine-probe 2>/dev/null) || return 1
+  case "$probe_out" in
+    impeccable-engine*) probe_version=${probe_out#impeccable-engine }; return 0 ;;
+  esac
+  return 1
+}
+probing=${IMPECCABLE_LAUNCHER_PROBE:-}
+
+manifest_digest() {
+  [ -f "$manifest" ] || return 0
+  sep=$(printf ' \t\r')
+  while IFS="$sep" read -r m_version m_asset m_sum _ || [ -n "$m_version" ]; do
+    case "$m_version" in ''|'#'*) continue ;; esac
+    if [ "$m_version" = "$1" ] && [ "$m_asset" = "$2" ]; then
+      printf '%s' "$m_sum"
+      return 0
+    fi
+  done < "$manifest"
+  return 0
+}
+
+read_expected() {
+  expected=$(manifest_digest "$version" "$asset")
+  expected_x64=""
+  if [ "$os" = windows ] && [ "$arch" = arm64 ]; then
+    expected_x64=$(manifest_digest "$version" impeccable-windows-x64.exe)
+  fi
+}
+
+cached_size() {
+  size=$(wc -c < "$cached") || size=""
+  size=${size##* }
+}
+
+hash_file() {
+  actual=""
+  if command -v shasum >/dev/null 2>&1; then
+    if digest=$(shasum -a 256 "$1" 2>/dev/null); then actual=${digest%% *}; fi
+  elif command -v sha256sum >/dev/null 2>&1; then
+    if digest=$(sha256sum "$1" 2>/dev/null); then actual=${digest%% *}; fi
+  fi
+}
+
+resolve_engine_bin() {
+  if [ -n "${IMPECCABLE_BIN:-}" ] && [ -x "${IMPECCABLE_BIN}" ]; then
+    resolved_bin="${IMPECCABLE_BIN}"
+    return 0
+  fi
+
+  case "$(uname -s 2>/dev/null || echo unknown)" in
+    Darwin) os=darwin ;;
+    Linux) os=linux ;;
+    MINGW*|MSYS*|CYGWIN*|Windows_NT) os=windows ;;
+    *) os=unknown ;;
+  esac
+  case "$(uname -m 2>/dev/null || echo unknown)" in
+    arm64|aarch64) arch=arm64 ;;
+    x86_64|amd64) arch=x64 ;;
+    *) arch=unknown ;;
+  esac
+
+  version=""
+  [ -f "$dir/VERSION" ] && version=$(tr -d '[:space:]' < "$dir/VERSION")
+  bin="$dir/bin/$os-$arch/impeccable"
+  [ "$os" = windows ] && bin="$bin.exe"
+
+  if [ -f "$bin" ] && { [ -x "$bin" ] || chmod +x "$bin" 2>/dev/null; }; then
+    if [ -n "$probing" ] || [ -z "$version" ] || { probe_ok "$bin" && [ "$probe_version" = "$version" ]; }; then
+      resolved_bin="$bin"
+      return 0
+    fi
+  fi
+
+  exe=""
+  [ "$os" = windows ] && exe=".exe"
+  home_bin="${HOME:-/nonexistent}/.impeccable/bin/impeccable$exe"
+  if [ -z "$probing" ] && [ -x "$home_bin" ] && probe_ok "$home_bin"; then
+    resolved_bin="$home_bin"
+    return 0
+  fi
+
+  cache_root="${IMPECCABLE_HOME:-${HOME:-/nonexistent}/.impeccable}"
+  cached="$cache_root/bin/$version/impeccable$exe"
+  asset="impeccable-$os-$arch"
+  [ "$os" = windows ] && asset="$asset.exe"
+  if [ -n "$version" ] && [ -x "$cached" ]; then
+    read_expected
+    cached_size
+    stamp=""
+    stamp_size=""
+    { IFS="$(printf ' \t\r')" read -r stamp stamp_size _ < "$cached.verified"; } 2>/dev/null || :
+    if [ -n "$stamp" ] && [ "$stamp_size" = "$size" ] && { [ "$stamp" = "$expected" ] || [ "$stamp" = "$expected_x64" ]; } && [ ! "$cached" -nt "$cached.verified" ]; then
+      resolved_bin="$cached"
+      return 0
+    fi
+    hash_file "$cached"
+    if [ -n "$actual" ] && { [ "$actual" = "$expected" ] || [ "$actual" = "$expected_x64" ]; }; then
+      { echo "$actual $size" > "$cached.verified"; } 2>/dev/null || :
+      resolved_bin="$cached"
+      return 0
+    fi
+  fi
+
+  # Also check sibling ~/.claude/skills/impeccable/scripts/bin/$os-$arch/impeccable if installed
+  claude_bin="${HOME:-/nonexistent}/.claude/skills/impeccable/scripts/bin/$os-$arch/impeccable$exe"
+  if [ -z "$probing" ] && [ -x "$claude_bin" ] && probe_ok "$claude_bin"; then
+    resolved_bin="$claude_bin"
+    return 0
+  fi
+
+  if [ -z "$probing" ] && command -v impeccable >/dev/null 2>&1 && probe_ok impeccable; then
+    resolved_bin="impeccable"
+    return 0
+  fi
+
+  if [ -n "$probing" ]; then
+    return 127
+  fi
+
+  if [ -n "$version" ] && [ "$os" != unknown ] && [ "$arch" != unknown ]; then
+    base="${IMPECCABLE_DOWNLOAD_BASE:-https://github.com/pbakaus/impeccable/releases/download}"
+    url="$base/engine-v$version/$asset"
+    read_expected
+    if [ -n "$expected" ] || [ -n "$expected_x64" ]; then
+      tmp="$cache_root/bin/$version/.impeccable.part.$$"
+      mkdir -p "$cache_root/bin/$version" 2>/dev/null || return 127
+      if command -v curl >/dev/null 2>&1 && curl -fsSL --retry 2 -o "$tmp" "$url" 2>/dev/null; then
+        hash_file "$tmp"
+        if [ -n "$actual" ] && [ "$actual" = "$expected" ]; then
+          chmod +x "$tmp" 2>/dev/null && mv -f "$tmp" "$cached" 2>/dev/null
+          cached_size
+          { echo "$actual $size" > "$cached.verified"; } 2>/dev/null || :
+          resolved_bin="$cached"
+          return 0
+        fi
+      fi
+      rm -f "$tmp" 2>/dev/null || :
+    fi
+  fi
+
+  return 127
+}
+
+resolved_bin=""
+if ! resolve_engine_bin; then
+  echo "impeccable: no engine binary found; run 'node scripts/fetch-engine.mjs' or set IMPECCABLE_BIN." >&2
+  exit 127
+fi
+
+if [ "$verb" = "context" ]; then
+  rc=0
+  "$resolved_bin" "$@" || rc=$?
+  if [ -f "pubspec.yaml" ]; then
+    printf "\n---\n\nFLUTTER_WEB_PREVIEW_STAGE:\n- This is a Flutter project (pubspec.yaml detected).\n- For visual exploration, new screens (new-work / craft / shape), live variant iteration (live / generate), or visual refinements (bolder / quieter / polish / colorize / layout / typeset), use the interactive Web Preview Stage at .impeccable-flutter/preview/index.html served via '%s live' (http://localhost:<port>/preview).\n- Annotate every preview section with data-flutter-file=\"lib/features/<feature>/presentation/...\" and data-flutter-widget=\"<WidgetName>\".\n- On every 'Accept ✓' (live-accept), immediately translate the accepted HTML/CSS + paramValues into the mapped Flutter .dart widget following Feature-First Clean Architecture (BaseCubit, Equatable, Result<T>, context.colorScheme, AppTextStyles, AppSpacing, AppRadius, AppIconWidget, AppShimmerScope, context.l10n) and run 'flutter analyze'.\n" "$0"
+  fi
+  exit "$rc"
+fi
+
+exec "$resolved_bin" "$@"

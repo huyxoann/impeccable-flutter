@@ -176,13 +176,18 @@
   // ---------------------------------------------------------------------------
 
   function own(el) {
-    return el && (el.id?.startsWith(PREFIX) || el.closest?.('[id^="' + PREFIX + '"]'));
+    return el && (
+      el.id?.startsWith(PREFIX) ||
+      el.closest?.('[id^="' + PREFIX + '"]') ||
+      el.closest?.('[data-impeccable-ignore]')
+    );
   }
 
   function pickable(el) {
     if (!el || el.nodeType !== 1) return false;
     if (SKIP_TAGS.has(el.tagName.toLowerCase())) return false;
     if (own(el)) return false;
+    if (el.hasAttribute?.('data-impeccable-stage')) return false;
     const r = el.getBoundingClientRect();
     return r.width >= 20 && r.height >= 20;
   }
@@ -792,9 +797,12 @@
         }
       } catch { /* cross-origin */ }
     }
+    const flutterScope = el.closest?.('[data-flutter-widget],[data-flutter-file]');
     return {
       tagName: el.tagName.toLowerCase(), id: el.id || null,
       classes: [...el.classList],
+      flutterWidget: el.getAttribute('data-flutter-widget') || flutterScope?.getAttribute('data-flutter-widget') || null,
+      flutterFile: el.getAttribute('data-flutter-file') || flutterScope?.getAttribute('data-flutter-file') || null,
       textContent: (el.textContent || '').slice(0, 500),
       outerHTML: el.outerHTML.slice(0, 10000),
       computedStyles: {
@@ -2219,6 +2227,11 @@
               updateBarContent('cycling');
               refreshParamsPanel();
             }
+            break;
+          }
+          // Static / no-HMR preview server fallback: inject directly from /source
+          if (msg.file) {
+            injectVariantsFromSource(msg.file, msg.id || currentSessionId);
             break;
           }
           // Variants are in source but not in the DOM yet. Common when the

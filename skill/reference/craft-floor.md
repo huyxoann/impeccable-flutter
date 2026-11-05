@@ -41,6 +41,20 @@ Surface habits:
 - Geometric masks standing in for organic contours. A circle, polygon, or radial-gradient cutout approximating a photographic subject's edge is the cheap version of the effect and reads worse than omitting it. Derive an alpha matte from the actual image, or produce a cut-out asset. <!-- rule:skill-ban-geometric-occlusion-mask -->
 - Light or dark picked by category. Pick it from the use scene: who, where, under what ambient light. <!-- rule:skill-reflex-theme-by-habit -->
 
+## Flutter Clean Architecture & UI Floor
+
+When writing or translating UI into Flutter (`lib/**/*.dart`), these are hard bans with zero exceptions:
+
+- **No raw colors or theme branching in widgets:** Never write `Color(0xFF...)`, `Colors.*`, or `isDark ? ... : ...` inside widget `build()` methods. Resolve every color via `context.colorScheme.*`, `Theme.of(context)`, or a registered `ThemeExtension<T>`.
+- **No ad-hoc `TextStyle(...)` in widgets:** Always use `AppTextStyles` / `AppTypography` tokens (`lib/core/theme/app_text_styles.dart`), using `.copyWith(...)` only for dynamic color, weight, height, or decoration overrides.
+- **No raw spacing/radius literals:** Always use `AppSpacing` and `AppRadius` design tokens instead of magic numbers (`EdgeInsets.all(16)`, `BorderRadius.circular(12)`).
+- **No raw `Icon(...)`, `SnackBar(...)`, or `CircularProgressIndicator`:**
+  - Render all icons via `AppIconWidget` (`CustomIcon` / `AppIcons`), converting SVG icons to `CustomPainter` with `withColor(Color? color)` and scaling to the `viewBox`.
+  - Display all SnackBars via `AppSnackBar` or `context.showSnackBar` / `context.showSuccessSnackBar` / `context.showErrorSnackBar`.
+  - Render all loading states with theme-aware skeleton/shimmer widgets (`AppShimmerScope`, `AppSkeletonBox`), never circular spinners for screen/list/card content.
+- **Icon + Text Row alignment:** Every `Row` pairing an `AppIconWidget` and a `Text` must set `crossAxisAlignment: CrossAxisAlignment.center` (never `CrossAxisAlignment.start` next to single-line text).
+- **Widget composition & state:** Split UI into focused `StatelessWidget` / `StatefulWidget` classes with `const` constructors — never private `Widget _buildX()` methods. Use `BaseCubit<State>` (with `safeEmit` and `Equatable` states) + `BlocBuilder` / `BlocSelector` / `BlocListener`, and resolve all user-facing strings via `context.l10n` (`lib/l10n/*.arb` + `flutter gen-l10n`).
+
 <codex>
 - Tracking stops at -0.04em. -0.02 to -0.03em usually reads better. <!-- rule:skill-typo-codex-tracking-repeat -->
 - Declare elevation once, border or shadow. A 1px border under a wide soft shadow is the ghost card. Card radii stay at 12–16px; pills are for small controls. <!-- rule:skill-codex-elevation-radius --> <!-- rule:skill-ban-codex-ghost-card --> <!-- rule:skill-ban-codex-over-round -->

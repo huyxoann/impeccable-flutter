@@ -1,18 +1,21 @@
-Interactive live variant mode: select elements in the browser, pick a design action, and get AI-generated HTML+CSS variants hot-swapped via the dev server's HMR.
+Interactive live variant mode for Flutter: render or mirror the Flutter screen onto the built-in HTML+CSS **Flutter Web Preview Stage** (`.impeccable-flutter/preview/index.html` served at `http://localhost:<serverPort>/preview`), let the user select widgets in the browser, draw annotations, cycle through AI-generated variants, and tune parameter sliders at 60fps — then immediately translate each accepted variant (`Accept ✓`) into production Flutter `.dart` code.
 
 ## Prerequisites
 
-A running dev server with hot module replacement (Vite, Next.js, Bun, etc.), OR a static HTML file open in the browser.
+Zero external web dev server is required for Flutter projects: `live-server.mjs` serves `.impeccable-flutter/preview/index.html` directly at `http://localhost:<serverPort>/preview` inside an interactive Mobile/Tablet Stage (`393×852`, `430×932`, `834×1194`) with a Light/Dark theme toggle.
 
 ## The contract (read once)
 
 Execute in order. No step skipped, no step reordered.
 
-1. `live.mjs`: boot.
-2. Navigate to the URL that serves `pageFile` (infer from `package.json`, docs, terminal output, or an open tab). If you can't infer it confidently, tell the user once to open their dev/preview URL. Never use `serverPort` as that URL; it's the helper, not the app.
-3. Poll loop with the default long timeout (600000 ms). After every event or `--reply`, run `live-poll.mjs` again immediately. Never pass a short `--timeout=`.
-4. On `generate`: read screenshot if present; load the action's reference; plan three distinct directions; write all variants in one edit; `--reply done`; poll again.
-5. On `accept` / `discard`: the poll script runs `live-accept.mjs`, acknowledges the delivered event, and prints `_completionAck`. Plain accepts/discards are terminal immediately; carbonize accepts remain recoverable until you finish cleanup, run `live-complete.mjs --id EVENT_ID`, and only then poll again.
+1. **Mirror/Prepare `.impeccable-flutter/preview/index.html` & Boot `live.mjs`**:
+   - Run `node {{scripts_path}}/live.mjs --preview` to auto-bootstrap `.impeccable-flutter/preview/index.html` and `.impeccable-flutter/live/config.json`, start the helper server, and inject `/live.js`.
+   - Sync the project's Flutter theme tokens (`DESIGN.md` or `lib/core/theme/`: `AppColors`/`ColorScheme`, `AppTextStyles`, `AppSpacing`, `AppRadius`) into `:root` and `#flutter-viewport[data-theme="dark"]` CSS custom properties in `.impeccable-flutter/preview/index.html`.
+   - Render/mirror the target Flutter screen or widget inside `<main id="flutter-screen">`, tagging each logical widget/section with `data-flutter-file="lib/..."` and `data-flutter-widget="WidgetName"`.
+2. **Open `previewUrl` (`http://localhost:<serverPort>/preview`)** in the browser (or tell the user the URL once if no browser tool is available).
+3. **Poll loop** with the default long timeout (600000 ms). After every event or `--reply`, run `live-poll.mjs` again immediately. Never pass a short `--timeout=`.
+4. **On `generate`**: read screenshot if present; load the action's reference; plan three distinct directions; write all variants in one edit into `.impeccable-flutter/preview/index.html`; `--reply EVENT_ID done --file .impeccable-flutter/preview/index.html`; poll again.
+5. **On `accept` / `discard`**: the poll script runs `live-accept.mjs`, acknowledges the delivered event, and prints `_completionAck`. On `accept`, immediately (a) finish carbonize cleanup in `.impeccable-flutter/preview/index.html`, (b) **translate the accepted variant + `paramValues` into the mapped Flutter `.dart` file (`_acceptResult.flutterFile` / `_acceptResult.flutterWidget`) and run `flutter analyze`**, (c) run `live-complete.mjs --id EVENT_ID`, and (d) immediately resume `live-poll.mjs` so the user can keep editing other widgets on the stage!
 6. If interrupted, run `live-status.mjs` or `live-resume.mjs` before guessing. The durable journal replays unacknowledged work after helper restart.
 7. On `exit`: run the cleanup at the bottom.
 
@@ -413,10 +416,15 @@ Do these five steps in the current thread, synchronously, before the next poll. 
 1. **Locate the carbonize block** in the source file (`_acceptResult.file`). It's bracketed by `<!-- impeccable-carbonize-start SESSION_ID -->` and `<!-- impeccable-carbonize-end SESSION_ID -->` and contains a `<style data-impeccable-css="SESSION_ID">` element. If the variant declared parameters, an `<!-- impeccable-param-values SESSION_ID: {...} -->` comment sits alongside the style tag with the user's chosen values; read it first; it drives steps 3 and 4 below.
 2. **Move the CSS rules** into the project's real stylesheet. Which stylesheet depends on the project (e.g. `site/styles/workflow.css` for an Astro project, or the component's co-located CSS file for a Vite/Next project; pick whichever already owns styling for the surrounding element).
 3. **Bake in parameter values while rewriting selectors.** For `@scope ([data-impeccable-variant="N"])` wrappers: retarget to real, semantic classes on the accepted HTML (`.why-visual--v2 .v2-label { … }`). For `:scope[data-p-<id>="VALUE"]` selectors: keep only the branch matching the chosen value from the param-values comment; drop the others (they're dead after accept). For `var(--p-<id>, DEFAULT)` in the CSS: either substitute the literal value, or if the param is still useful as a knob going forward, leave the var and update its initial declaration to the chosen value.
-4. **Unwrap the accepted content.** Delete the `<div data-impeccable-variant="N" style="display: contents">` that wraps it. Drop `data-impeccable-params` and any `data-p-*` attributes from it; those are live-mode plumbing, not source.
+4. **Unwrap the accepted content.** Delete the `<div data-impeccable-variant="N" style="display: contents">` that wraps it. Drop `data-impeccable-params` and any `data-p-*` attributes from it; those are live-mode plumbing, not source. Keep `data-flutter-file` and `data-flutter-widget` attributes intact on the semantic element so subsequent edits on the same widget still map cleanly.
 5. **Delete the inline `<style>` block, the `<!-- impeccable-param-values -->` comment if present, and both `<!-- impeccable-carbonize-start/end -->` markers.** Also drop any `@scope` rules for variants other than the accepted one; those are dead code now.
+6. **Translate the accepted design into Flutter `.dart` code immediately**:
+   - Inspect `_acceptResult.flutterFile`, `_acceptResult.flutterWidget`, and `_acceptResult.paramValues` (from `<!-- impeccable-param-values -->`).
+   - Create or update the target Flutter widget/screen in `lib/.../*.dart` to match the accepted HTML/CSS structure, layout topology, typography hierarchy, color commitment, and tuned knob values (`paramValues`).
+   - Map all visual tokens to the Flutter project's design system (`context.colorScheme.*`, `AppTextStyles.*`, `AppSpacing.*`, `AppRadius.*`, `AppIconWidget`, `context.l10n.*`) — never hardcode raw `Color(0xFF...)` or ad-hoc `TextStyle(...)` in widget `build()` methods.
+   - Run `flutter analyze <flutterFile>` to verify zero analyzer issues on the updated `.dart` file.
 
-After the file is clean, run `live-complete.mjs --id SESSION_ID`, verify it reports `phase: "completed"`, then poll again.
+After both `.impeccable-flutter/preview/index.html` and the Flutter `.dart` file are clean, run `node {{scripts_path}}/live-complete.mjs --id SESSION_ID`, verify it reports `phase: "completed"`, then immediately run `node {{scripts_path}}/live-poll.mjs` again so the user can continue picking and refining other widgets on the stage.
 
 A background agent may be used for the rewrite, but the current thread is responsible for verifying the five steps are complete before issuing the next poll. In practice, inline is usually faster and less error-prone.
 

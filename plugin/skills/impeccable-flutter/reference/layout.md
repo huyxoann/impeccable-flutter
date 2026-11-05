@@ -113,4 +113,4 @@ Create a systematic plan:
 - **Consistency**: Is the spacing system applied uniformly?
 - **Responsiveness**: Does the layout adapt gracefully across screen sizes (`LayoutBuilder`)?
 
-When the rhythm and hierarchy land, hand off to `$impeccable-flutter polish` for the final pass.
+When the rhythm and hierarchy land, hand off to `/impeccable-flutter polish` for the final pass.

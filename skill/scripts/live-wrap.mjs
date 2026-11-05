@@ -401,7 +401,7 @@ function buildCssAuthoring(styleMode, count) {
  * Returns the first matching file path, or null.
  */
 function findFileWithQuery(query, cwd, genOpts = {}) {
-  const searchDirs = ['src', 'app', 'pages', 'components', 'public', 'views', 'templates', '.'];
+  const searchDirs = ['.impeccable-flutter/preview', 'src', 'app', 'pages', 'components', 'public', 'views', 'templates', '.'];
   const seen = new Set();
 
   for (const dir of searchDirs) {

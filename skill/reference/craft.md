@@ -42,11 +42,16 @@ Based on the design brief's "Recommended References", consult the relevant files
 - [motion-design.md](motion-design.md) for `flutter_animate` timing.
 - [color-and-contrast.md](color-and-contrast.md) for `ColorScheme` usage.
 
-## Step 3: Visual Direction & Assets (Harness-Gated)
+## Step 3: Web Preview Stage & Live Variant Exploration (Default Before `.dart` Code)
 
-If the harness has **native image generation**, this step is mandatory. **Stop and load [codex.md](codex.md)**. 
+Before writing or modifying production Flutter `.dart` files, prototype the screen on the **Flutter Web Preview Stage** so the user can visually inspect, tweak parameters, and approve the exact UI in their browser:
 
-If the harness lacks native image generation, **state in one line that the visual-direction-by-generation step is being skipped**, then proceed. Implement directly from the brief.
+1. Boot the built-in preview stage via `node {{scripts_path}}/live.mjs --preview` and load [live.md](live.md).
+2. Sync the project's theme tokens (`DESIGN.md` / `lib/core/theme/`) into `:root` and `#flutter-viewport[data-theme="dark"]` in `.impeccable-flutter/preview/index.html`.
+3. Render the shaped screen inside `<main id="flutter-screen">` (393×852 Mobile/Tablet frame with Light/Dark toggle), tagging every widget/section with `data-flutter-file="lib/..."` and `data-flutter-widget="WidgetName"`.
+4. Open `previewUrl` (`http://localhost:<serverPort>/preview`) and start `node {{scripts_path}}/live-poll.mjs`. The user can click any widget on the stage, request 3 variants (`bolder`, `quieter`, `layout`, `colorize`, etc.), drag the Tune knobs (`data-impeccable-params`), and click **Accept ✓**.
+5. Each time the user clicks **Accept ✓** on the stage (or confirms the full screen preview), immediately translate the accepted HTML/CSS + tuned parameter values into production Flutter `.dart` code in Step 4 below while keeping the Live session open until the user exits.
+6. *(Optional)* If the harness also has native image generation and raster plates/illustrations are needed, consult [codex.md](codex.md).
 
 ## Step 4: Build to Production Quality
 

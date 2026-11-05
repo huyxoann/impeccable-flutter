@@ -2,7 +2,7 @@
 
 Generate is the fast lane into live mode: the user names an element, a direction, and a count in one sentence, and within a minute they are cycling through variants in their browser. One command boots the helper, hands the element to the overlay in the page your harness already shows (it scrolls to it, selects it, and fires the same Go a click fires) and returns the generate event; one edit writes the variants; one call replies and waits for the user's choice, which the helper bakes into source itself. This file owns the lane's plumbing; from the event onward the design work is [live.md](live.md)'s, unchanged, so read it in full now if you have not this session.
 
-**Web only.** Live mode's browser overlay has no native equivalent; on `ios` / `android` / `adaptive` projects, decline this command and offer `bolder` or `quieter` on the source instead.
+**Flutter Web Preview Stage enabled.** On Flutter projects (`ios` / `android` / `adaptive`), `generate` runs on the interactive Web Preview Stage (`.impeccable-flutter/preview/index.html` served at `http://localhost:<port>/preview`): mirror the target Flutter widget into `.impeccable-flutter/preview/index.html` with `data-flutter-file="lib/..."` and `data-flutter-widget="<WidgetName>"`, run `{{scripts_path}}/impeccable live-generate`, let the user cycle variants & tune sliders in the browser, and on `Accept ✓` translate the accepted variant + `paramValues` directly into the mapped `.dart` file.
 
 The plumbing is where the lane saves time: one command starts the session around the page your harness already shows, one call replies and waits, and nothing here is a browser you have to babysit. The design work is not where it saves time. Setup runs as for any command (`impeccable context`, this reference, craft-floor.md before the edit), and the variants are planned, written, and accepted exactly the way a live session plans, writes, and accepts them.
 
@@ -46,10 +46,10 @@ Done when you hold an action from the vocabulary (asked for, when the request na
    - **No browser tool** (Codex, others): run the start command with `--open --wait-for-browser 120000`; it opens the system browser, and the longer wait covers the user finding the tab. **`browser_open_failed` back**: tell the user the `url` in one line and rerun with `--wait-for-browser 120000`.
 
 ```bash
-{{scripts_path}}/impeccable live-generate --target src/App.jsx --dev-url http://127.0.0.1:5173/ --selector ".pricing-grid" --action bolder --count 3 --boot --wait-for-browser 60000
+{{scripts_path}}/impeccable live-generate --file .impeccable-flutter/preview/index.html --selector '[data-flutter-widget="PricingCard"]' --action bolder --count 3 --boot
 ```
 
-Run it in the foreground in Cursor and Claude Code (it returns within the wait); on Codex, in an exec you yield from, the way Step 3 runs the poll.
+On a Flutter project, if `.impeccable-flutter/preview/index.html` does not yet contain the target widget, first mirror the widget from `lib/features/<feature>/presentation/...` into `.impeccable-flutter/preview/index.html` inside `#flutter-screen` with `data-flutter-file="lib/..."` and `data-flutter-widget="<WidgetName>"`, then run `live-generate` above. It boots the helper, wraps the target element with a fresh 8-hex session ID, and returns `previewUrl` (`http://localhost:<port>/preview`) plus the leased `event` and `scaffold`.
 
 - `--target`: the file that renders the element when the request or the project makes it obvious; skip it otherwise.
 - `--dev-url`: the origin from 1; omit it and the boot probes.
@@ -83,9 +83,12 @@ Then tell the user, in one line, where their variants are: *"Three [bolder] vari
 
 Outside the replace path, read the matching live.md section before acting: `scaffold.previewMode: "svelte-component"` (Svelte previews are edited as components, and their accept is mechanical), `mode: "insert"`, `variant_mount_failed`, `steer`, `manual_edit_apply`, and any `fallback: "agent-driven"` wrap error.
 
-## Step 4: Accept and close
+## Step 4: Accept, Translate to Flutter `.dart`, and Close
 
-The call from Step 3 returns the user's choice. **`discard`**: nothing to do. **`accept`**: `_acceptResult.carbonize: true` is the normal case, and the cleanup is live.md's **Required after accept**, unchanged: move the accepted variant's rules into the stylesheet that already owns the element with real selectors, bake the chosen knob values in, unwrap the element and drop every `data-impeccable-*` attribute, delete the inline `<style>` block and both `impeccable-carbonize` markers, then `{{scripts_path}}/impeccable live-complete --id SESSION_ID` and confirm `phase: "completed"`. (`baked: true` appears only when the accept was run with `--bake`; then the helper already made the variant permanent and no `live-complete` is owed.)
+The call from Step 3 returns the user's choice. **`discard`**: nothing to do. **`accept`**: `_acceptResult.carbonize: true` is the normal case, and the cleanup is live.md's **Required after accept**:
+1. Clean up `.impeccable-flutter/preview/index.html` (unwrap the accepted variant, bake `paramValues`, remove `impeccable-carbonize` markers).
+2. **Translate into Flutter `.dart`**: Apply the accepted variant's layout, typography, colors, and `paramValues` directly into the mapped `flutterFile` (`lib/features/<feature>/presentation/...`) following Feature-First Clean Architecture (`context.colorScheme`, `AppTextStyles`, `AppSpacing`, `AppRadius`, `AppIconWidget`, `AppShimmerScope`, `context.l10n`) and run `flutter analyze`.
+3. Run `{{scripts_path}}/impeccable live-complete --id SESSION_ID` and confirm `phase: "completed"`.
 
 Close without being asked, the moment the choice is handled:
 

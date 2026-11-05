@@ -242,4 +242,4 @@ Test that delight actually delights:
 - **Performant**: No jank, no slowdown in Profile mode.
 - **Appropriate**: Matches brand and context.
 
-When the moments feel earned, hand off to `$impeccable-flutter polish` for the final pass.
+When the moments feel earned, hand off to `/impeccable-flutter polish` for the final pass.

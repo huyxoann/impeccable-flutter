@@ -189,18 +189,30 @@ export function readSourceFiles(rootDir) {
   const scripts = [];
   const scriptsDir = path.join(skillDir, 'scripts');
   if (fs.existsSync(scriptsDir)) {
-    const scriptFiles = fs.readdirSync(scriptsDir).filter(f => {
-      if (PER_PROJECT_SCRIPT_ARTIFACTS.has(f)) return false;
-      return fs.statSync(path.join(scriptsDir, f)).isFile();
-    });
-    for (const scriptFile of scriptFiles) {
-      const scriptPath = path.join(scriptsDir, scriptFile);
-      scripts.push({
-        name: scriptFile,
-        content: fs.readFileSync(scriptPath, 'utf-8'),
-        filePath: scriptPath
-      });
-    }
+    const walkScripts = (dir) => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true })
+        .sort((a, b) => a.name.localeCompare(b.name));
+      for (const entry of entries) {
+        const entryPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (dir === scriptsDir && entry.name === 'bin') continue;
+          walkScripts(entryPath);
+          continue;
+        }
+        if (!entry.isFile()) continue;
+        if (PER_PROJECT_SCRIPT_ARTIFACTS.has(entry.name)) continue;
+        const relPath = path.relative(scriptsDir, entryPath).split(path.sep).join('/');
+        const raw = fs.readFileSync(entryPath, 'utf-8');
+        const isBatch = /\.(cmd|bat)$/i.test(relPath);
+        scripts.push({
+          name: relPath,
+          content: isBatch ? raw.replace(/\r?\n/g, '\r\n') : raw,
+          filePath: entryPath,
+          mode: fs.statSync(entryPath).mode & 0o777,
+        });
+      }
+    };
+    walkScripts(scriptsDir);
   }
 
   const agents = [];
@@ -560,11 +572,12 @@ function escapeRegex(str) {
 
 const EXCLUDED_FROM_SUGGESTIONS = new Set([
   'impeccable',               // foundational skill, not a steering command
+  'impeccable-flutter',       // foundational skill, not a steering command
   'teach-impeccable',         // deprecated shim
   'frontend-design',          // deprecated shim
 ]);
 
-// Sub-commands of /impeccable that should appear in {{available_commands}}.
+// Sub-commands of /impeccable-flutter that should appear in {{available_commands}}.
 // These are the commands that audit/critique/etc. reference when suggesting next steps.
 const IMPECCABLE_SUB_COMMANDS = [
   'adapt', 'animate', 'audit', 'bolder', 'clarify', 'colorize',
@@ -577,15 +590,15 @@ export function replacePlaceholders(content, provider, commandNames = [], allSki
   const cmdPrefix = placeholders.command_prefix || '/';
 
   // Build the available_commands list.
-  // After the v3.0 consolidation, commands are sub-commands of /impeccable.
-  // If there's only one user-invocable skill (impeccable), generate sub-command references.
+  // After the v3.0 consolidation, commands are sub-commands of /impeccable-flutter.
+  // If there's only one user-invocable skill (impeccable-flutter), generate sub-command references.
   // Otherwise fall back to listing skill names (backwards compat for forks).
   const nonExcluded = commandNames.filter(n => !EXCLUDED_FROM_SUGGESTIONS.has(n));
   let commandList;
   if (nonExcluded.length === 0) {
-    // Single-skill architecture: list sub-commands as /impeccable <sub>
+    // Single-skill architecture: list sub-commands as /impeccable-flutter <sub>
     commandList = IMPECCABLE_SUB_COMMANDS
-      .map(n => `${cmdPrefix}impeccable ${n}`)
+      .map(n => `${cmdPrefix}impeccable-flutter ${n}`)
       .join(', ');
   } else {
     // Multi-skill architecture (backwards compat)
@@ -597,7 +610,8 @@ export function replacePlaceholders(content, provider, commandNames = [], allSki
     .replace(/\{\{config_file\}\}/g, placeholders.config_file)
     .replace(/\{\{ask_instruction\}\}/g, placeholders.ask_instruction)
     .replace(/\{\{command_prefix\}\}/g, cmdPrefix)
-    .replace(/\{\{available_commands\}\}/g, commandList);
+    .replace(/\{\{available_commands\}\}/g, commandList)
+    .replace(/\$impeccable-flutter\b/g, `${cmdPrefix}impeccable-flutter`);
 
   // Replace `/skillname` invocations with the correct command prefix for this provider
   // (e.g., `/normalize` → `$normalize` for Codex)

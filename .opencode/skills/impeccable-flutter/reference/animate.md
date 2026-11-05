@@ -152,4 +152,4 @@ Test animations thoroughly:
 - **Reduced motion works**: Animations disabled or simplified appropriately.
 - **Doesn't block**: Users can interact during/after animations.
 
-When the motion clarifies state instead of decorating it, hand off to `$impeccable-flutter polish` for the final pass.
+When the motion clarifies state instead of decorating it, hand off to `/impeccable-flutter polish` for the final pass.

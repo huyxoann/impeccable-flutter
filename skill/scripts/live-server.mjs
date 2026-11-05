@@ -26,11 +26,12 @@ import { createLiveSessionStore } from './live-session-store.mjs';
 import {
   getDesignSidecarPath,
   getLiveAnnotationsDir,
+  getPreviewDir,
   readLiveServerInfo,
   removeLiveServerInfo,
   resolveDesignSidecarPath,
   writeLiveServerInfo,
-} from './impeccable-paths.mjs';
+} from './impeccable-flutter-paths.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // PRODUCT.md / DESIGN.md live wherever load-context.mjs resolves. The generated
@@ -304,6 +305,37 @@ function createRequestHandler({ detectScript, sessionPath, livePath }) {
       if (!detectScript) { res.writeHead(404); res.end('Not available'); return; }
       res.writeHead(200, { 'Content-Type': 'application/javascript' });
       res.end(detectScript);
+      return;
+    }
+
+    // --- Flutter Web Preview Stage (/preview & /preview/*) ---
+    if (p === '/preview' || p === '/preview/' || p.startsWith('/preview/')) {
+      const previewDir = getPreviewDir(process.cwd());
+      const subPath = (p === '/preview' || p === '/preview/') ? 'index.html' : p.slice('/preview/'.length);
+      if (subPath.includes('..')) { res.writeHead(400); res.end('Bad path'); return; }
+      const targetPath = path.resolve(previewDir, subPath);
+      if (!targetPath.startsWith(previewDir) || !fs.existsSync(targetPath) || !fs.statSync(targetPath).isFile()) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Preview file not found');
+        return;
+      }
+      const ext = path.extname(targetPath).toLowerCase();
+      const mimeMap = {
+        '.html': 'text/html; charset=utf-8',
+        '.css': 'text/css; charset=utf-8',
+        '.js': 'application/javascript; charset=utf-8',
+        '.json': 'application/json; charset=utf-8',
+        '.svg': 'image/svg+xml',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.webp': 'image/webp',
+      };
+      res.writeHead(200, {
+        'Content-Type': mimeMap[ext] || 'application/octet-stream',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      });
+      res.end(fs.readFileSync(targetPath));
       return;
     }
 

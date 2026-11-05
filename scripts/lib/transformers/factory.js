@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { cleanDir, ensureDir, writeFile, generateYamlFrontmatter, generateYamlDocument, replacePlaceholders } from '../utils.js';
 
@@ -164,6 +165,8 @@ export function createTransformer(config) {
     for (const skill of skills) {
       const skillName = skill.name;
       const skillDir = path.join(skillsDir, skillName);
+      const scriptsPath = `${configDir}/skills/${skillName}/scripts`;
+      const referencePath = `${configDir}/skills/${skillName}/reference`;
 
       // Build frontmatter
       const frontmatterObj = {
@@ -178,16 +181,25 @@ export function createTransformer(config) {
         if (val) frontmatterObj[spec.yamlKey] = val;
       }
 
-      // Replace {{command_hint}} in argument-hint with command names from metadata.
+      if (Array.isArray(frontmatterObj['allowed-tools'])) {
+        frontmatterObj['allowed-tools'] = frontmatterObj['allowed-tools'].map((t) =>
+          String(t)
+            .replace(/\{\{scripts_path\}\}/g, scriptsPath)
+            .replace(/\{\{reference_path\}\}/g, referencePath),
+        );
+      } else if (typeof frontmatterObj['allowed-tools'] === 'string') {
+        frontmatterObj['allowed-tools'] = frontmatterObj['allowed-tools']
+          .replace(/\{\{scripts_path\}\}/g, scriptsPath)
+          .replace(/\{\{reference_path\}\}/g, referencePath);
+      }
+
+      // Replace {{command_hint}} in argument-hint with grouped sub-commands matching impeccable.
       if (frontmatterObj['argument-hint']?.includes('{{command_hint}}')) {
-        const metaScript = skill.scripts?.find(s => s.name === 'command-metadata.json');
-        if (metaScript) {
-          const commands = Object.keys(JSON.parse(metaScript.content));
-          frontmatterObj['argument-hint'] = frontmatterObj['argument-hint'].replace(
-            '{{command_hint}}',
-            commands.join('|')
-          );
-        }
+        const groupedHint = '[craft|shape · audit|critique · animate|bolder|colorize|delight|layout|overdrive|quieter|typeset · adapt|clarify|distill · harden|onboard|optimize|polish · init|document|extract|live|generate] [target]';
+        frontmatterObj['argument-hint'] = frontmatterObj['argument-hint'].replace(
+          '{{command_hint}}',
+          groupedHint
+        );
       }
 
       const frontmatter = generateYamlFrontmatter(frontmatterObj);
@@ -195,9 +207,10 @@ export function createTransformer(config) {
       // Build body
       let skillBody = replacePlaceholders(skill.body, placeholderKey, commandNames, allSkillNames);
 
-      // Replace {{scripts_path}} with provider-aware path to skill's scripts directory
-      const scriptsPath = `${configDir}/skills/${skillName}/scripts`;
-      skillBody = skillBody.replace(/\{\{scripts_path\}\}/g, scriptsPath);
+      // Replace {{scripts_path}} and {{reference_path}} with provider-aware paths
+      skillBody = skillBody
+        .replace(/\{\{scripts_path\}\}/g, scriptsPath)
+        .replace(/\{\{reference_path\}\}/g, referencePath);
       if (provider === 'claude-code') {
         skillBody = skillBody.replace(
           new RegExp(`node ${scriptsPath.replace(/\./g, '\\.')}/([a-zA-Z0-9_-]+\\.mjs)`, 'g'),
@@ -210,52 +223,6 @@ export function createTransformer(config) {
       const content = `${frontmatter}\n\n${skillBody}`;
       writeFile(path.join(skillDir, 'SKILL.md'), content);
 
-      // --- FAN-OUT COMMANDS LOGIC ---
-      if (config.fanOutCommands && skill.scripts) {
-        const metaScript = skill.scripts.find(s => s.name === 'command-metadata.json');
-        if (metaScript) {
-          const metadata = JSON.parse(metaScript.content);
-          for (const [cmdName, cmdMeta] of Object.entries(metadata)) {
-            const fannedOutDir = path.join(skillsDir, cmdName);
-            ensureDir(fannedOutDir);
-            
-            // Build frontmatter for fanned out skill
-            const foFrontmatterObj = {
-              name: cmdName,
-              description: cmdMeta.description,
-            };
-            if (skillsVersion && includeVersion) foFrontmatterObj.version = skillsVersion;
-            
-            // Apply active fields from the main skill
-            for (const spec of activeFields) {
-              if (spec.yamlKey === 'argument-hint') {
-                if (cmdMeta.argumentHint) {
-                  foFrontmatterObj['argument-hint'] = cmdMeta.argumentHint;
-                }
-              } else if (spec.yamlKey === 'user-invocable') {
-                foFrontmatterObj['user-invocable'] = true;
-              } else {
-                if (spec.condition && !spec.condition(skill)) continue;
-                const val = spec.value ? spec.value(skill) : skill[spec.sourceKey];
-                if (val) foFrontmatterObj[spec.yamlKey] = val;
-              }
-            }
-            
-            const foFrontmatter = generateYamlFrontmatter(foFrontmatterObj);
-            
-            // Build body for fanned out skill
-            const ref = skill.references?.find(r => r.name === cmdName);
-            let foRefContent = ref ? ref.content : '';
-            foRefContent = replacePlaceholders(foRefContent, placeholderKey, [], allSkillNames);
-            foRefContent = foRefContent.replace(/\{\{scripts_path\}\}/g, scriptsPath);
-            
-            const foContent = `${foFrontmatter}\n\n${skillBody}\n\n## Specific Instructions: ${cmdName}\n\n${foRefContent}`;
-            writeFile(path.join(fannedOutDir, 'SKILL.md'), foContent);
-          }
-        }
-      }
-      // --- END FAN-OUT LOGIC ---
-
       if (writeOpenAIMetadata) {
         const openaiMetadata = buildOpenAIMetadata(skill);
         writeFile(path.join(skillDir, 'agents', 'openai.yaml'), generateYamlDocument(openaiMetadata));
@@ -267,7 +234,9 @@ export function createTransformer(config) {
         ensureDir(refDir);
         for (const ref of skill.references) {
           let refContent = replacePlaceholders(ref.content, placeholderKey, [], allSkillNames);
-          refContent = refContent.replace(/\{\{scripts_path\}\}/g, scriptsPath);
+          refContent = refContent
+            .replace(/\{\{scripts_path\}\}/g, scriptsPath)
+            .replace(/\{\{reference_path\}\}/g, referencePath);
           writeFile(path.join(refDir, `${ref.name}.md`), refContent);
           refCount++;
         }
@@ -278,7 +247,11 @@ export function createTransformer(config) {
         const scriptsOutDir = path.join(skillDir, 'scripts');
         ensureDir(scriptsOutDir);
         for (const script of skill.scripts) {
-          writeFile(path.join(scriptsOutDir, script.name), script.content);
+          const outPath = path.join(scriptsOutDir, script.name);
+          writeFile(outPath, script.content);
+          if (script.mode && (script.mode & 0o111)) {
+            try { fs.chmodSync(outPath, 0o755); } catch {}
+          }
           scriptCount++;
         }
       }
@@ -287,11 +260,15 @@ export function createTransformer(config) {
     if (config.agentFormat) {
       const agentsDir = path.join(providerDir, `${configDir}/agents`);
       for (const skill of skills) {
+        const scriptsPath = `${configDir}/skills/${skill.name}/scripts`;
+        const referencePath = `${configDir}/skills/${skill.name}/reference`;
         for (const agent of skill.agents || []) {
           // Agents can declare `providers: <list>` to limit which harnesses
           // they emit to. Default (no field) ships everywhere with agentFormat.
           if (agent.providers && !agent.providers.includes(provider)) continue;
-          const body = replacePlaceholders(agent.body, placeholderKey, [], allSkillNames);
+          const body = replacePlaceholders(agent.body, placeholderKey, [], allSkillNames)
+            .replace(/\{\{scripts_path\}\}/g, scriptsPath)
+            .replace(/\{\{reference_path\}\}/g, referencePath);
           const agentFile = buildAgentFile(config, agent, body);
           if (!agentFile) continue;
           ensureDir(agentsDir);

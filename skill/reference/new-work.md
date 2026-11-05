@@ -123,6 +123,17 @@ Inspect the proposed map before producing assets: `impeccable comp-spec --comp <
 
 No comp and no apology for it: the ambition lives in the direction contract's FIRST VIEWPORT block and the named signature interaction, and the finish reviewer audits those promises in behavior. The chosen decision comp rides to the finish review as the critique reference.
 
+### Flutter Web Preview Stage ➔ Clean Architecture Implementation
+
+When building a new screen or redesign in a Flutter project (`pubspec.yaml` present):
+1. **Stage on `.impeccable-flutter/preview/index.html` first:** Run `{{scripts_path}}/impeccable live` to bootstrap `.impeccable-flutter/preview/index.html` and the live server (`http://localhost:<port>/preview`). Build the locked direction inside `#flutter-screen` using the Mobile (`393×852` / `430×932`) and Tablet (`834×1194`) stage switcher and Light/Dark toggle, annotating each section with `data-flutter-file="lib/features/<feature>/presentation/..."` and `data-flutter-widget="<WidgetName>"`.
+2. **Interactive Live Refinement:** Open `http://localhost:<port>/preview` and enter `{{scripts_path}}/impeccable live-poll` (per [live.md](live.md)) so the user can inspect the screen, pick any section to generate variants, and tune parameters with sliders.
+3. **Translate to Production Flutter `.dart` on Accept:** As soon as the user clicks **Accept ✓** on a variant (or approves the full preview), immediately implement/update the mapped Flutter files under `lib/features/<feature>/`:
+   - `domain/` (pure Dart `Equatable` entities, abstract repositories, `UseCase<Type, Params>`)
+   - `data/` (`BaseRepository` with `Result<T>`, DTO models, `ILocalStorage`)
+   - `presentation/` (`BaseCubit<State>` with `safeEmit` and `Equatable` states, `BlocBuilder`/`BlocSelector`/`BlocListener`, `StatelessWidget` components with `const` constructors, `context.colorScheme`, `AppTextStyles`, `AppSpacing`, `AppRadius`, `AppIconWidget`, `AppShimmerScope`, `context.l10n`, and `GoRouter` routes)
+   - Convert any raster plates/illustrations to `.webp` (`cwebp -q 90`) and any SVG icons to `CustomPainter` (`CustomIcon` in `AppIcons`), then run `flutter analyze` and `flutter test`.
+
 ### Both paths
 
 - **The first viewport is a thesis, not a header.** Demonstrate the mechanism immediately, at the scale the form has in life; do not trap the concept inside a standard hero or card shell. The memory test: if someone left after one viewport, what would they describe an hour later? If the honest answer is a mood, the concept has not committed yet.

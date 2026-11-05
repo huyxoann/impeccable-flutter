@@ -57,6 +57,12 @@ Thumbs.db
 # Legacy per-project live mode injection config. New installs use
 # .impeccable/live/config.json in the project root instead.
 **/skills/impeccable/scripts/config.json
+**/skills/impeccable-flutter/scripts/config.json
+
+# The launcher next to them (skill/scripts/impeccable) is the tracked file.
+skill/scripts/bin/
+**/skills/impeccable/scripts/bin/
+**/skills/impeccable-flutter/scripts/bin/
 
 # Extension build artifacts
 extension/detector/

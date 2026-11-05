@@ -61,7 +61,7 @@ Optional evocative subtitles are allowed in the form `## 2. Colors: The [Name] P
 
 ## When to run
 
-- The user just ran `$impeccable-flutter teach` and needs the visual side documented.
+- The user just ran `/impeccable-flutter teach` and needs the visual side documented.
 - The skill noticed no `DESIGN.md` exists and nudged the user to create one.
 - An existing `DESIGN.md` is stale (the design has drifted).
 - Before a large redesign, to capture the current state as a reference.

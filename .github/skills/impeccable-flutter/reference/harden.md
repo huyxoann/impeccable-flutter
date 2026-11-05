@@ -172,4 +172,4 @@ if (hasError) {
 - Use fixed widths/heights for text containers.
 - Block the entire interface when one component errors.
 
-When edge cases are covered, hand off to `$impeccable-flutter polish` for the final pass.
+When edge cases are covered, hand off to `/impeccable-flutter polish` for the final pass.

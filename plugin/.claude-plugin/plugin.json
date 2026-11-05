@@ -1,11 +1,17 @@
 {
   "name": "impeccable-flutter",
-  "description": "Design fluency for Flutter development. 1 skill with 22 commands (/impeccable-flutter craft, /impeccable-flutter audit, /impeccable-flutter critique, etc.) and curated anti-pattern detection.",
-  "version": "3.1.2",
+  "description": "Design fluency for Flutter development. 1 skill with 24 commands (/impeccable-flutter craft, /impeccable-flutter audit, /impeccable-flutter live, /impeccable-flutter generate, etc.) and curated anti-pattern detection.",
+  "version": "4.8.0",
   "author": {
     "name": "huyxoann",
     "email": "ngochuytran26@gmail.com"
   },
   "homepage": "https://github.com/huyxoann/impeccable-flutter",
-  "repository": "https://github.com/huyxoann/impeccable-flutter"
+  "repository": "https://github.com/huyxoann/impeccable-flutter",
+  "agents": [
+    "./agents/impeccable-asset-producer.md",
+    "./agents/impeccable-documenter.md",
+    "./agents/impeccable-finish-reviewer.md",
+    "./agents/impeccable-manual-edit-applier.md"
+  ]
 }

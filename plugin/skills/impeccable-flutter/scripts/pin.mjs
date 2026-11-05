@@ -31,7 +31,7 @@ const VALID_COMMANDS = new Set([
   'critique', 'audit', 'polish', 'bolder', 'quieter',
   'distill', 'harden', 'onboard', 'animate', 'colorize',
   'typeset', 'layout', 'delight', 'overdrive', 'clarify',
-  'adapt', 'optimize'
+  'adapt', 'optimize', 'live',
 ]);
 
 // Marker to identify pinned skills (so unpin doesn't delete user skills)
@@ -65,8 +65,8 @@ function findHarnessDirs(projectRoot) {
   for (const harness of HARNESS_DIRS) {
     const skillsDir = join(projectRoot, harness, 'skills');
     // Only pin in harness dirs that already have impeccable-flutter installed
-    const impeccable-flutterDir = join(skillsDir, 'impeccable-flutter');
-    if (existsSync(impeccable-flutterDir) || existsSync(join(skillsDir, 'i-impeccable-flutter'))) {
+    const impeccableFlutterDir = join(skillsDir, 'impeccable-flutter');
+    if (existsSync(impeccableFlutterDir) || existsSync(join(skillsDir, 'i-impeccable-flutter'))) {
       dirs.push(skillsDir);
     }
   }
@@ -190,7 +190,7 @@ const [,, action, command] = process.argv;
 
 if (!action || !command) {
   console.log('Usage: node pin.mjs <pin|unpin> <command>');
-  console.log(`\nAvailable commands: ${VALID_COMMANDS.join(', ')}`);
+  console.log(`\nAvailable commands: ${[...VALID_COMMANDS].join(', ')}`);
   process.exit(1);
 }
 
@@ -199,9 +199,9 @@ if (action !== 'pin' && action !== 'unpin') {
   process.exit(1);
 }
 
-if (!VALID_COMMANDS.includes(command)) {
+if (!VALID_COMMANDS.has(command)) {
   console.error(`Unknown command: ${command}`);
-  console.error(`Available commands: ${VALID_COMMANDS.join(', ')}`);
+  console.error(`Available commands: ${[...VALID_COMMANDS].join(', ')}`);
   process.exit(1);
 }
 

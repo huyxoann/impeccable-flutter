@@ -33,7 +33,9 @@ const HEADER_MARKERS = [
 export function isGeneratedFile(filePath, options = {}) {
   const cwd = options.cwd || process.cwd();
   const absPath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
+  const rel = path.relative(cwd, absPath).replace(/\\/g, '/');
 
+  if (rel.startsWith('.impeccable-flutter/preview/')) return false;
   if (isGitIgnored(absPath, cwd)) return true;
   if (hasGeneratedHeader(absPath)) return true;
   return false;

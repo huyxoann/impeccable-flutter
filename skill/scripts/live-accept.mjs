@@ -86,11 +86,12 @@ Output (JSON):
     console.log(JSON.stringify({ handled: true, file: relFile, carbonize: false, ...result }));
   } else {
     const result = handleAccept(id, variantNum, lines, targetFile, paramValues);
-    // Single-line attention-grabber when cleanup is required. The full
-    // five-step checklist lives in reference/live.md (loaded once per
-    // session); repeating it per-event would waste tokens.
     if (result.carbonize) {
-      result.todo = 'REQUIRED before next poll: carbonize cleanup in ' + relFile + '. See reference/live.md "Required after accept".';
+      const targetHint = result.flutterFile
+        ? ` (${result.flutterFile}${result.flutterWidget ? ' :: ' + result.flutterWidget : ''})`
+        : '';
+      result.todo =
+        `REQUIRED before next poll: (1) carbonize cleanup in ${relFile}, AND (2) translate the accepted HTML/CSS + paramValues into Flutter Dart code${targetHint} and run flutter analyze, then run live-complete.mjs --id ${id}.`;
     }
     console.log(JSON.stringify({ handled: true, file: relFile, ...result }));
   }
@@ -150,12 +151,24 @@ function handleAccept(id, variantNum, lines, targetFile, paramValues) {
   // Extract CSS block if present
   const cssContent = extractCss(lines, block, id);
 
-  // Check if carbonizing is needed:
-  // - CSS block exists, OR
-  // - variant HTML contains helper classes/attributes that need cleanup
+  // Extract Flutter target metadata (data-flutter-file / data-flutter-widget)
+  // from the accepted variant or nearest ancestor in the preview document.
   const variantText = variantContent.join('\n');
+  const ancestorText = lines.slice(0, replaceRange.start + 1).reverse().join('\n');
+  const flutterFileMatch =
+    variantText.match(/data-flutter-file=["']([^"']+)["']/) ||
+    ancestorText.match(/data-flutter-file=["']([^"']+)["']/);
+  const flutterWidgetMatch =
+    variantText.match(/data-flutter-widget=["']([^"']+)["']/) ||
+    ancestorText.match(/data-flutter-widget=["']([^"']+)["']/);
+  const flutterFile = flutterFileMatch ? flutterFileMatch[1] : null;
+  const flutterWidget = flutterWidgetMatch ? flutterWidgetMatch[1] : null;
+
+  // Always require carbonize when accepting inside .impeccable-flutter/preview/
+  // so the agent translates the accepted variant to Flutter .dart code before polling again.
+  const isFlutterPreview = targetFile.replace(/\\/g, '/').includes('.impeccable-flutter/preview/');
   const hasHelperAttrs = variantText.includes('data-impeccable-variant');
-  const needsCarbonize = !!(cssContent || hasHelperAttrs);
+  const needsCarbonize = !!(cssContent || hasHelperAttrs || isFlutterPreview);
 
   // Build the replacement
   const restored = deindentContent(variantContent, indent);
@@ -204,7 +217,12 @@ function handleAccept(id, variantNum, lines, targetFile, paramValues) {
   ];
   fs.writeFileSync(targetFile, newLines.join('\n'), 'utf-8');
 
-  return { carbonize: needsCarbonize };
+  return {
+    carbonize: needsCarbonize,
+    ...(flutterFile ? { flutterFile } : {}),
+    ...(flutterWidget ? { flutterWidget } : {}),
+    ...(paramValues && Object.keys(paramValues).length > 0 ? { paramValues } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -531,7 +549,7 @@ function detectCommentSyntax(filePath) {
 
 function findSessionFile(id, cwd) {
   const marker = 'impeccable-variants-start ' + id;
-  const searchDirs = ['src', 'app', 'pages', 'components', 'public', 'views', 'templates', '.'];
+  const searchDirs = ['.impeccable-flutter/preview', 'src', 'app', 'pages', 'components', 'public', 'views', 'templates', '.'];
   const seen = new Set();
 
   for (const dir of searchDirs) {

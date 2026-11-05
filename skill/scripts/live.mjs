@@ -23,7 +23,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadContext } from './load-context.mjs';
 import { resolveFiles } from './live-inject.mjs';
-import { readLiveServerInfo } from './impeccable-paths.mjs';
+import {
+  getLiveConfigPath,
+  getPreviewEntryPath,
+  readLiveServerInfo,
+} from './impeccable-flutter-paths.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -51,6 +55,10 @@ The agent should then:
   3. Enter the poll loop: node live-poll.mjs`);
     process.exit(0);
   }
+
+  // 0. Auto-bootstrap Flutter Web Preview Stage & live config when in a Flutter project
+  //    or when --preview is requested (or when .impeccable-flutter/preview/index.html exists).
+  ensureFlutterPreviewBootstrap(process.cwd(), args.includes('--preview'));
 
   // 1. Check config (fail fast if missing — no point starting anything else)
   const checkOut = runScript('live-inject.mjs', ['--check']);
@@ -88,12 +96,14 @@ The agent should then:
   //    Warning only — the agent decides whether to act.
   const resolvedFiles = resolveFiles(process.cwd(), checkResult.config);
   const drift = scanForDrift(process.cwd(), resolvedFiles, checkResult.config);
+  const hasPreviewEntry = fs.existsSync(getPreviewEntryPath(process.cwd()));
 
   // 6. Emit everything the agent needs
   console.log(JSON.stringify({
     ok: true,
     serverPort: serverInfo.port,
     serverToken: serverInfo.token,
+    previewUrl: hasPreviewEntry ? `http://localhost:${serverInfo.port}/preview` : null,
     pageFiles: resolvedFiles,
     configDrift: drift,
     hasProduct: ctx.hasProduct,
@@ -104,6 +114,200 @@ The agent should then:
     designPath: ctx.designPath,
     migrated: ctx.migrated,
   }, null, 2));
+}
+
+/**
+ * Ensure a Flutter Web Preview Stage (.impeccable-flutter/preview/index.html)
+ * and live config (.impeccable-flutter/live/config.json) exist when running
+ * in a Flutter workspace (pubspec.yaml present) or when --preview is passed.
+ */
+function ensureFlutterPreviewBootstrap(cwd, forcePreview = false) {
+  const isFlutterProject = fs.existsSync(path.join(cwd, 'pubspec.yaml'));
+  const previewEntry = getPreviewEntryPath(cwd);
+  const configPath = getLiveConfigPath(cwd);
+
+  if (!isFlutterProject && !forcePreview && !fs.existsSync(previewEntry)) {
+    return;
+  }
+
+  if (!fs.existsSync(previewEntry)) {
+    fs.mkdirSync(path.dirname(previewEntry), { recursive: true });
+    fs.writeFileSync(previewEntry, buildDefaultFlutterPreviewHtml(), 'utf-8');
+  }
+
+  if (!fs.existsSync(configPath)) {
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify(
+        {
+          files: ['.impeccable-flutter/preview/index.html'],
+          exclude: [],
+          insertBefore: '</body>',
+          commentSyntax: 'html',
+          cspChecked: true,
+        },
+        null,
+        2,
+      ) + '\n',
+      'utf-8',
+    );
+  }
+}
+
+function buildDefaultFlutterPreviewHtml() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Impeccable Flutter — Live Preview Stage</title>
+  <style>
+    :root {
+      /* AppColors / ColorScheme tokens (Light default) */
+      --color-bg: #F6F5F2;
+      --color-surface: #FFFFFF;
+      --color-surface-container: #EFECE6;
+      --color-on-surface: #171614;
+      --color-on-surface-variant: #65615B;
+      --color-primary: #1F5EFF;
+      --color-on-primary: #FFFFFF;
+      --color-outline: #E2DDD5;
+      /* AppSpacing tokens */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      /* AppRadius tokens */
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      /* AppTypography tokens */
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    #flutter-viewport[data-theme="dark"] {
+      --color-bg: #111214;
+      --color-surface: #1A1C20;
+      --color-surface-container: #23262C;
+      --color-on-surface: #F4F3EF;
+      --color-on-surface-variant: #9B9A95;
+      --color-primary: #5B8AFF;
+      --color-on-primary: #0D1528;
+      --color-outline: #2C3038;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: #141518;
+      color: #F4F3EF;
+      font-family: var(--font-sans);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 16px 96px;
+    }
+    .stage-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #1F2127;
+      border: 1px solid #2F333D;
+      border-radius: 999px;
+      padding: 6px 14px;
+      margin-bottom: 18px;
+      font-size: 12px;
+      color: #B4B7C2;
+    }
+    .stage-toolbar button {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #D9DCE6;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .stage-toolbar button.active {
+      background: #2D3240;
+      border-color: #454D63;
+      color: #FFFFFF;
+    }
+    #flutter-viewport {
+      width: 393px;
+      min-height: 852px;
+      background: var(--color-bg);
+      color: var(--color-on-surface);
+      border-radius: 44px;
+      border: 8px solid #282B33;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.2s cubic-bezier(0.22, 1, 0.36, 1), min-height 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .device-statusbar {
+      height: 44px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-on-surface);
+    }
+    #flutter-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-md);
+      gap: var(--space-md);
+    }
+  </style>
+</head>
+<body data-impeccable-stage="true">
+  <div class="stage-toolbar" data-impeccable-ignore="true">
+    <span>Flutter Stage</span>
+    <button type="button" class="active" onclick="setSize(393, 852, 44, this)">Mobile 393×852</button>
+    <button type="button" onclick="setSize(430, 932, 48, this)">Max 430×932</button>
+    <button type="button" onclick="setSize(834, 1194, 28, this)">Tablet 834×1194</button>
+    <button type="button" onclick="toggleTheme(this)">Theme: Light</button>
+  </div>
+
+  <div id="flutter-viewport" data-theme="light" data-impeccable-stage="true">
+    <div class="device-statusbar" data-impeccable-ignore="true">
+      <span>9:41</span>
+      <span>5G · 100%</span>
+    </div>
+    <main id="flutter-screen" data-flutter-file="lib/main.dart" data-flutter-widget="HomeScreen">
+      <section class="hero-card" data-flutter-file="lib/main.dart" data-flutter-widget="HeroSection" style="background: var(--color-surface); padding: var(--space-lg); border-radius: var(--radius-lg); border: 1px solid var(--color-outline);">
+        <p style="font-size: 12px; font-weight: 600; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.06em;">Flutter Preview Ready</p>
+        <h1 style="font-size: 24px; font-weight: 700; margin-top: 8px; line-height: 1.25;">Select any widget to generate 3 variants</h1>
+        <p style="font-size: 14px; color: var(--color-on-surface-variant); margin-top: 8px; line-height: 1.5;">Click an element on this stage, choose an action or type a prompt, tune parameters, and click Accept ✓ to write Flutter Dart code.</p>
+      </section>
+    </main>
+  </div>
+
+  <script data-impeccable-ignore="true">
+    function setSize(w, h, r, btn) {
+      const vp = document.getElementById('flutter-viewport');
+      vp.style.width = w + 'px';
+      vp.style.minHeight = h + 'px';
+      vp.style.borderRadius = r + 'px';
+      btn.parentElement.querySelectorAll('button').forEach((b, i) => { if (i < 3) b.classList.remove('active'); });
+      btn.classList.add('active');
+    }
+    function toggleTheme(btn) {
+      const vp = document.getElementById('flutter-viewport');
+      const next = vp.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      vp.setAttribute('data-theme', next);
+      btn.textContent = 'Theme: ' + (next === 'dark' ? 'Dark' : 'Light');
+    }
+  </script>
+</body>
+</html>
+`;
 }
 
 /**

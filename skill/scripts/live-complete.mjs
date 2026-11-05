@@ -4,7 +4,7 @@
  */
 
 import { createLiveSessionStore } from './live-session-store.mjs';
-import { readLiveServerInfo } from './impeccable-paths.mjs';
+import { readLiveServerInfo } from './impeccable-flutter-paths.mjs';
 
 function parseArgs(argv) {
   const out = { status: 'complete' };

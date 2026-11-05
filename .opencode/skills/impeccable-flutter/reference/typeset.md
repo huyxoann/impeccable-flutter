@@ -100,4 +100,4 @@ Build a clear type scale using `ThemeData`:
 - **Personality**: Does the typography reflect the brand?
 - **Accessibility**: Does text meet WCAG contrast ratios? Does it scale properly when device text size is increased?
 
-When the type carries the hierarchy on its own, hand off to `$impeccable-flutter polish` for the final pass.
+When the type carries the hierarchy on its own, hand off to `/impeccable-flutter polish` for the final pass.

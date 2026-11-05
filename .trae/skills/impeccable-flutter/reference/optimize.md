@@ -106,4 +106,4 @@ Test that optimizations worked:
 - **No regressions**: Ensure functionality still works.
 - **User perception**: Does it *feel* faster?
 
-When the UI thread stays green, hand off to `$impeccable-flutter polish` for the final pass.
+When the UI thread stays green, hand off to `/impeccable-flutter polish` for the final pass.

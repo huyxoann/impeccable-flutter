@@ -1,18 +1,21 @@
-Interactive live variant mode: select elements in the browser, pick a design action, and get AI-generated Dart+Flutter variants hot-swapped via the dev server's HMR.
+Interactive live variant mode for Flutter: render or mirror the Flutter screen onto the built-in HTML+CSS **Flutter Web Preview Stage** (`.impeccable-flutter/preview/index.html` served at `http://localhost:<serverPort>/preview`), let the user select widgets in the browser, draw annotations, cycle through AI-generated variants, and tune parameter sliders at 60fps — then immediately translate each accepted variant (`Accept ✓`) into production Flutter `.dart` code.
 
 ## Prerequisites
 
-A running dev server with hot module replacement (Vite, Next.js, Bun, etc.), OR a static Dart file open in the browser.
+Zero external web dev server is required for Flutter projects: `live-server.mjs` serves `.impeccable-flutter/preview/index.html` directly at `http://localhost:<serverPort>/preview` inside an interactive Mobile/Tablet Stage (`393×852`, `430×932`, `834×1194`) with a Light/Dark theme toggle.
 
 ## The contract (read once)
 
 Execute in order. No step skipped, no step reordered.
 
-1. `live.mjs`: boot.
-2. Navigate to the URL that serves `pageFile` (infer from `package.json`, docs, terminal output, or an open tab). If you can't infer it confidently, tell the user once to open their dev/preview URL. Never use `serverPort` as that URL; it's the helper, not the app.
-3. Poll loop with the default long timeout (600000 ms). After every event or `--reply`, run `live-poll.mjs` again immediately. Never pass a short `--timeout=`.
-4. On `generate`: read screenshot if present; load the action's reference; plan three distinct directions; write all variants in one edit; `--reply done`; poll again.
-5. On `accept` / `discard`: the poll script runs `live-accept.mjs`, acknowledges the delivered event, and prints `_completionAck`. Plain accepts/discards are terminal immediately; carbonize accepts remain recoverable until you finish cleanup, run `live-complete.mjs --id EVENT_ID`, and only then poll again.
+1. **Mirror/Prepare `.impeccable-flutter/preview/index.html` & Boot `live.mjs`**:
+   - Run `node .qoder/skills/impeccable-flutter/scripts/live.mjs --preview` to auto-bootstrap `.impeccable-flutter/preview/index.html` and `.impeccable-flutter/live/config.json`, start the helper server, and inject `/live.js`.
+   - Sync the project's Flutter theme tokens (`DESIGN.md` or `lib/core/theme/`: `AppColors`/`ColorScheme`, `AppTextStyles`, `AppSpacing`, `AppRadius`) into `:root` and `#flutter-viewport[data-theme="dark"]` CSS custom properties in `.impeccable-flutter/preview/index.html`.
+   - Render/mirror the target Flutter screen or widget inside `<main id="flutter-screen">`, tagging each logical widget/section with `data-flutter-file="lib/..."` and `data-flutter-widget="WidgetName"`.
+2. **Open `previewUrl` (`http://localhost:<serverPort>/preview`)** in the browser (or tell the user the URL once if no browser tool is available).
+3. **Poll loop** with the default long timeout (600000 ms). After every event or `--reply`, run `live-poll.mjs` again immediately. Never pass a short `--timeout=`.
+4. **On `generate`**: read screenshot if present; load the action's reference; plan three distinct directions; write all variants in one edit into `.impeccable-flutter/preview/index.html`; `--reply EVENT_ID done --file .impeccable-flutter/preview/index.html`; poll again.
+5. **On `accept` / `discard`**: the poll script runs `live-accept.mjs`, acknowledges the delivered event, and prints `_completionAck`. On `accept`, immediately (a) finish carbonize cleanup in `.impeccable-flutter/preview/index.html`, (b) **translate the accepted variant + `paramValues` into the mapped Flutter `.dart` file (`_acceptResult.flutterFile` / `_acceptResult.flutterWidget`) and run `flutter analyze`**, (c) run `live-complete.mjs --id EVENT_ID`, and (d) immediately resume `live-poll.mjs` so the user can keep editing other widgets on the stage!
 6. If interrupted, run `live-status.mjs` or `live-resume.mjs` before guessing. The durable journal replays unacknowledged work after helper restart.
 7. On `exit`: run the cleanup at the bottom.
 
@@ -30,9 +33,9 @@ Chat is overhead. No recap, no tutorial output, no pasting PRODUCT / DESIGN bodi
 node .qoder/skills/impeccable-flutter/scripts/live.mjs
 ```
 
-Output JSON: `{ ok, serverPort, serverToken, pageFiles, hasProduct, product, productPath, hasDesign, design, designPath, migrated }`. `pageFiles` is the list of Dart entries the live script was injected into. Keep PRODUCT.md and DESIGN.md in mind for variant generation; **DESIGN.md wins on visual decisions; PRODUCT.md wins on strategic/voice decisions.** When DESIGN.md is missing, identity is **not** absent; extract it from Flutter variables, computed styles, and sibling components on the page (see Step 4 Phase A). Identity preservation is the default; departure from existing identity requires an explicit trigger from PRODUCT.md anti-references or the user's freeform prompt. If `migrated: true`, the loader auto-renamed legacy `.impeccable-flutter.md` to `PRODUCT.md`; mention this once and suggest `$impeccable-flutter document` for the matching DESIGN.md.
+Output JSON: `{ ok, serverPort, serverToken, pageFiles, hasProduct, product, productPath, hasDesign, design, designPath, migrated }`. `pageFiles` is the list of HTML entries the live script was injected into. Keep PRODUCT.md and DESIGN.md in mind for variant generation; **DESIGN.md wins on visual decisions; PRODUCT.md wins on strategic/voice decisions.** When DESIGN.md is missing, identity is **not** absent; extract it from CSS variables, computed styles, and sibling components on the page (see Step 4 Phase A). Identity preservation is the default; departure from existing identity requires an explicit trigger from PRODUCT.md anti-references or the user's freeform prompt. If `migrated: true`, the loader auto-renamed legacy `.impeccable.md` to `PRODUCT.md`; mention this once and suggest `/impeccable document` for the matching DESIGN.md.
 
-`serverPort` and `serverToken` belong to the small **Impeccable Flutter live helper** HTTP server (serves `/live.js`, SSE, and `/poll`). That port is **not** your dev server and is usually not the URL you open to view the app. The browser page is whatever origin serves one of the `pageFiles` entries (Vite / Next / Bun / tunnel / LAN hostname).
+`serverPort` and `serverToken` belong to the small **Impeccable live helper** HTTP server (serves `/live.js`, SSE, and `/poll`). That port is **not** your dev server and is usually not the URL you open to view the app. The browser page is whatever origin serves one of the `pageFiles` entries (Vite / Next / Bun / tunnel / LAN hostname).
 
 If output is `{ ok: false, error: "config_missing" | "config_invalid", path }`, this project hasn't been configured for live mode (or its config is stale). See **First-time setup** at the bottom.
 
@@ -53,7 +56,7 @@ LOOP:
 
 ## Recovery commands
 
-The live helper persists an append-only journal under `.impeccable-flutter/live/sessions/`. Browser checkpoints are advisory but durable; the journal is canonical. This is local durable recovery state, not project source.
+The live helper persists an append-only journal under `.impeccable/live/sessions/`. Browser checkpoints are advisory but durable; the journal is canonical. This is local durable recovery state, not project source.
 
 Use these commands when the chat was interrupted, polling was missed, the helper restarted, or the browser reloaded:
 
@@ -77,15 +80,15 @@ Speed matters; the user is watching a spinner. Minimize tool calls by using the 
 
 ### 1. Read the screenshot (if present)
 
-`event.screenshotPath` is **only sent when the user placed at least one comment or stroke before Go.** When present, it's an absolute path to a PNG of the element as rendered with the annotations baked in. **Read it before planning**: annotations encode user intent not recoverable from `element.outerDart` alone.
+`event.screenshotPath` is **only sent when the user placed at least one comment or stroke before Go.** When present, it's an absolute path to a PNG of the element as rendered with the annotations baked in. **Read it before planning**: annotations encode user intent not recoverable from `element.outerHTML` alone.
 
-When `screenshotPath` is absent, don't ask for one and don't go looking for the current rendering. The omission is deliberate: without annotations, a screenshot would anchor the model on the existing design and fight the three-distinct-directions brief. Work from `element.outerDart`, the computed styles in `event.element`, and the freeform prompt if present.
+When `screenshotPath` is absent, don't ask for one and don't go looking for the current rendering. The omission is deliberate: without annotations, a screenshot would anchor the model on the existing design and fight the three-distinct-directions brief. Work from `element.outerHTML`, the computed styles in `event.element`, and the freeform prompt if present.
 
 `event.comments` and `event.strokes` carry structured metadata alongside the visual. Treat the screenshot as primary; use the structured data for specifics worth quoting (e.g. the exact text of a comment).
 
 Reading annotations precisely:
 
-- **Comment position carries meaning.** Its `{x, y}` is element-local Flutter px (same coord space as `element.boundingRect`). Find the child under that point and apply the comment text LOCALLY to that sub-element. A comment near the title is about the title, not a global description.
+- **Comment position carries meaning.** Its `{x, y}` is element-local CSS px (same coord space as `element.boundingRect`). Find the child under that point and apply the comment text LOCALLY to that sub-element. A comment near the title is about the title, not a global description.
 - **Comments and strokes are independent annotations** unless clearly paired by overlap or tight proximity. Don't let the visual weight of a prominent stroke override the precise location of a textually-specific comment elsewhere.
 - **Strokes are gestures; read them by shape.** Closed loop = "this thing" (emphasis / focus); arrow = direction (move / point to); cross or slash = delete; free scribble = emphasis or delete depending on context. A loop around region X means "pay attention to X," not "only change pixels inside X."
 - **When a stroke's intent is ambiguous** (circle or arrow? emphasis or move?), state your reading in one sentence of rationale rather than silently guessing. If the uncertainty materially changes the brief, ask one short clarifying question before generating.
@@ -109,10 +112,10 @@ If `--text` matches multiple candidates equally well, wrap exits with `{ error: 
 
 Output on success: `{ file, insertLine, commentSyntax, styleMode, styleTag, cssSelectorPrefixExamples, cssAuthoring }`.
 
-`styleMode` controls how preview Flutter must be authored. Treat it as a detected capability mode, not a framework guess:
+`styleMode` controls how preview CSS must be authored. Treat it as a detected capability mode, not a framework guess:
 
-- `scoped`: use `@scope ([data-impeccable-flutter-variant="N"])` rules.
-- `astro-global-prefixed`: use explicit `[data-impeccable-flutter-variant="N"]` selector prefixes and the exact `styleTag` returned by the tool.
+- `scoped`: use `@scope ([data-impeccable-variant="N"])` rules.
+- `astro-global-prefixed`: use explicit `[data-impeccable-variant="N"]` selector prefixes and the exact `styleTag` returned by the tool.
 
 Use `cssAuthoring` as the source of truth for the current file. It includes the exact `styleTag`, selector strategy, selector examples, requirements, and forbidden patterns. Do not apply a framework-specific exception unless the returned `styleMode` / `cssAuthoring.mode` says to.
 
@@ -126,7 +129,7 @@ All three carry `fallback: "agent-driven"`. Follow **Handle fallback** below.
 
 ### 3. Load the action's reference
 
-If `event.action` is `impeccable-flutter` (the default freeform action), use SKILL.md's shared laws plus the loaded register reference (`brand.md` or `product.md`). Do not load a sub-command reference. **Freeform is not a pass to skip parameters:** you still follow the composition budget and the freeform bias in **§7 Parameters** below. Sub-command files list MUST-have signature knobs; freeform has no such file, so sizing knobs from surface weight and primary axes is entirely on you.
+If `event.action` is `impeccable` (the default freeform action), use SKILL.md's shared laws plus the loaded register reference (`brand.md` or `product.md`). Do not load a sub-command reference. **Freeform is not a pass to skip parameters:** you still follow the composition budget and the freeform bias in **§7 Parameters** below. Sub-command files list MUST-have signature knobs; freeform has no such file, so sizing knobs from surface weight and primary axes is entirely on you.
 
 Any other `event.action` (`bolder`, `quieter`, `distill`, `polish`, `typeset`, `colorize`, `layout`, `adapt`, `animate`, `delight`, `overdrive`): Read `reference/<action>.md` before planning. Each sub-command encodes a specific discipline; skipping its reference produces generic output. Those files may require specific params; layer them on top of the §7 budget, not instead of it.
 
@@ -141,7 +144,7 @@ Four phases. Do them in order.
 The existing surface has an identity already. Read it before planning anything. Sources, in priority order:
 
 1. **DESIGN.md** if loaded: read the visual system fields (palette, type pairing, motion, components). This is the authoritative answer.
-2. **Flutter custom properties** in the page's stylesheets (`:root { --color-...; --font-...; ... }`): these are de-facto tokens.
+2. **CSS custom properties** in the page's stylesheets (`:root { --color-...; --font-...; ... }`): these are de-facto tokens.
 3. **Computed styles** on the picked element and its parent: colors, fonts, spacing scales, corner radii.
 4. **Sibling components on the page**: what visual rhetoric do existing components use? (Asymmetric or centered? Dense or airy? Bold or quiet?)
 
@@ -157,7 +160,7 @@ Be specific. "Modern" is not a color, "elegant" is not a type pairing, "clean" i
 
 Do not include adjectives that name an aesthetic family ("editorial-leaning", "terminal-flavored", "brutalist"); those are conclusions, not data. They belong to Phase C lane selection in departure mode, not to identity description. Letting them sneak into Phase A is how the identity-lock collapses into a self-fulfilling prophecy.
 
-This sentence is the **identity lock**. Every variant must be readable as the same brand if rendered side by side. Skipping this phase is the primary cause of off-brand variants. Absence of DESIGN.md is never an excuse; extract from Flutter and computed styles instead.
+This sentence is the **identity lock**. Every variant must be readable as the same brand if rendered side by side. Skipping this phase is the primary cause of off-brand variants. Absence of DESIGN.md is never an excuse; extract from CSS and computed styles instead.
 
 #### Phase B: Pick mode (default vs departure)
 
@@ -183,7 +186,7 @@ If you're unsure, you're in default mode. The cost of being wrong about default 
 
 Three variants → three DIFFERENT axes. The trio reads as *the same brand at three angles*. Do not introduce new fonts, new palette hues, or new aesthetic-family signals; those belong to departure mode.
 
-**While planning each variant, also name its 2–3 parameter knobs** (per the §7 budget table). Parameters are part of the design, not a decoration added afterward. If the variant explores density, expose a density knob. If it explores color commitment, expose a color-amount range. Deciding "what's tunable" during planning produces better knobs than retrofitting them onto finished Dart.
+**While planning each variant, also name its 2–3 parameter knobs** (per the §7 budget table). Parameters are part of the design, not a decoration added afterward. If the variant explores density, expose a density knob. If it explores color commitment, expose a color-amount range. Deciding "what's tunable" during planning produces better knobs than retrofitting them onto finished HTML.
 
 **Departure mode.** Each variant anchors to a different **aesthetic direction**, derived from the brand's stated voice and register in PRODUCT.md. Do NOT pick from a fixed catalog of lane categories. The right three directions for this brand are not the same as the right three for another brand, and picking from a list is itself the training-data reflex (the model selects "Swiss-grid, Terminal, Industrial-signage" every time because those are the furthest-from-editorial items in any enumerated list).
 
@@ -193,7 +196,7 @@ Instead, work from the brand:
 2. From those physical experiences, derive three visual directions that are genuinely different from each other AND from the current surface you're departing.
 3. Avoid the **reflex-reject lanes** in [brand.md](brand.md). Don't trade one monoculture for another. If you find yourself reaching for "Swiss-grid" or "Terminal" or "Industrial-signage" by reflex, you are pattern-matching a catalog in your training data, not reading the brand. Start over from the personality words.
 4. Each direction must be expressible in one concrete sentence that names a real-world referent ("a museum exhibition label system for a contemporary art gallery" not "clean and minimal"). If your sentence contains only adjectives, it's not concrete enough.
-5. **While planning each direction, also name its 2–3 parameter knobs** (per the §7 budget table). The same principle as default mode: decide "what's tunable" during planning, not after writing the Dart. A departure-mode hero with 0 parameters is not "bold creative vision," it's a missed opportunity for the user to fine-tune the direction they pick.
+5. **While planning each direction, also name its 2–3 parameter knobs** (per the §7 budget table). The same principle as default mode: decide "what's tunable" during planning, not after writing the HTML. A departure-mode hero with 0 parameters is not "bold creative vision," it's a missed opportunity for the user to fine-tune the direction they pick.
 
 #### Phase D: Squint test
 
@@ -232,78 +235,78 @@ When the prompt and PRODUCT.md anti-references conflict (the prompt asks for X, 
 
 ### 6. Write all variants in a single edit
 
-Complete Dart replacement of the original element for each variant, not a Flutter-only patch. Consider the element's context (computed styles, parent structure, Flutter variables from `event.element`).
+Complete HTML replacement of the original element for each variant, not a CSS-only patch. Consider the element's context (computed styles, parent structure, CSS variables from `event.element`).
 
-Write Flutter + all variants in ONE edit at the `insertLine` reported by `wrap`. Colocate Flutter as a `<style>` tag inside the variant wrapper; `<style>` works anywhere in modern browsers and this ensures Flutter and Dart arrive atomically (no FOUC).
+Write CSS + all variants in ONE edit at the `insertLine` reported by `wrap`. Colocate CSS as a `<style>` tag inside the variant wrapper; `<style>` works anywhere in modern browsers and this ensures CSS and HTML arrive atomically (no FOUC).
 
-Use the `cssAuthoring` object returned by `live-wrap.mjs` to author the temporary preview Flutter. The style opening tag shown below is the common case; replace it with `cssAuthoring.styleTag` when the tool returns a different one. The variant markup shape is otherwise stable:
+Use the `cssAuthoring` object returned by `live-wrap.mjs` to author the temporary preview CSS. The style opening tag shown below is the common case; replace it with `cssAuthoring.styleTag` when the tool returns a different one. The variant markup shape is otherwise stable:
 
 ```html
 <!-- Variants: insert below this line -->
-<style data-impeccable-flutter-css="SESSION_ID">
+<style data-impeccable-css="SESSION_ID">
   /* rules matching cssAuthoring.rulePattern */
 </style>
-<div data-impeccable-flutter-variant="1">
+<div data-impeccable-variant="1">
   <!-- variant 1: full element replacement (single top-level element) -->
 </div>
-<div data-impeccable-flutter-variant="2" style="display: none">
+<div data-impeccable-variant="2" style="display: none">
   <!-- variant 2: full element replacement -->
 </div>
-<div data-impeccable-flutter-variant="3" style="display: none">
+<div data-impeccable-variant="3" style="display: none">
   <!-- variant 3: full element replacement -->
 </div>
 ```
 
 **Each variant div contains exactly one top-level element: the full replacement for the original.** Use the same tag as the original (e.g. `<section>` if the user picked a `<section>`). Loose siblings (heading + paragraph + div as direct children of the variant div) break the outline tracking and the accept flow, which both assume one child.
 
-The first variant has no `display: none` (visible by default). All others do. If variants use only inline styles and no preview Flutter, omit the `<style>` tag entirely.
+The first variant has no `display: none` (visible by default). All others do. If variants use only inline styles and no preview CSS, omit the `<style>` tag entirely.
 
 One edit, all variants; the browser's MutationObserver picks everything up in one pass.
 
-For `styleMode: "scoped"`, author every `:scope` rule with a descendant combinator. The `@scope` boundary is the **variant wrapper `<div data-impeccable-flutter-variant="N">`**, not the element you're designing. A bare `:scope { background: cream; }` styles the wrapper, not the inner replacement, so the cream lands on a `display: contents` shell while the actual element keeps page defaults. Always step in: `:scope > .card`, `:scope > section`, `:scope .hero-title`, etc. The fake test agent's Flutter in `tests/live-e2e/agent.mjs` is a faithful template; every scoped rule starts `:scope > ...`.
+For `styleMode: "scoped"`, author every `:scope` rule with a descendant combinator. The `@scope` boundary is the **variant wrapper `<div data-impeccable-variant="N">`**, not the element you're designing. A bare `:scope { background: cream; }` styles the wrapper, not the inner replacement, so the cream lands on a `display: contents` shell while the actual element keeps page defaults. Always step in: `:scope > .card`, `:scope > section`, `:scope .hero-title`, etc. The fake test agent's CSS in `tests/live-e2e/agent.mjs` is a faithful template; every scoped rule starts `:scope > ...`.
 
-**JSX / TSX target files.** Wrap `<style>` content in a template literal so the Flutter `{` / `}` aren't parsed as JSX expressions, and use `className=` / `style={{…}}` on every variant element. Keep `data-impeccable-flutter-*` attributes as-is; they're plain strings:
+**JSX / TSX target files.** Wrap `<style>` content in a template literal so the CSS `{` / `}` aren't parsed as JSX expressions, and use `className=` / `style={{…}}` on every variant element. Keep `data-impeccable-*` attributes as-is; they're plain strings:
 
 ```tsx
-<style data-impeccable-flutter-css="SESSION_ID">{`
-  @scope ([data-impeccable-flutter-variant="1"]) { ... }
-  @scope ([data-impeccable-flutter-variant="2"]) { ... }
+<style data-impeccable-css="SESSION_ID">{`
+  @scope ([data-impeccable-variant="1"]) { ... }
+  @scope ([data-impeccable-variant="2"]) { ... }
 `}</style>
-<div data-impeccable-flutter-variant="1">
+<div data-impeccable-variant="1">
   {/* variant 1 */}
 </div>
-<div data-impeccable-flutter-variant="2" style={{ display: 'none' }}>
+<div data-impeccable-variant="2" style={{ display: 'none' }}>
   {/* variant 2 */}
 </div>
 ```
 
-The wrap script already gives you a single-rooted JSX wrapper: a `<div data-impeccable-flutter-variants="…">` outer element with the marker comments tucked inside. Drop the variants block above into the "Variants: insert below this line" comment and the source stays valid TSX.
+The wrap script already gives you a single-rooted JSX wrapper: a `<div data-impeccable-variants="…">` outer element with the marker comments tucked inside. Drop the variants block above into the "Variants: insert below this line" comment and the source stays valid TSX.
 
 ### 7. Parameters (composition-sized, 0–4 per variant)
 
-Each variant can expose **coarse** knobs alongside the full Dart/Flutter replacement. The browser docks a small panel to the right of the outline with one control per parameter. The user drags/clicks and sees instant feedback: there is zero regeneration cost because the knob toggles a Flutter variable or data attribute that the variant's scoped Flutter is already authored against.
+Each variant can expose **coarse** knobs alongside the full HTML/CSS replacement. The browser docks a small panel to the right of the outline with one control per parameter. The user drags/clicks and sees instant feedback: there is zero regeneration cost because the knob toggles a CSS variable or data attribute that the variant's scoped CSS is already authored against.
 
 **What “optional” does not mean.** Parameters are not nice-to-have decoration on large work. The word meant “omit controls that are redundant or cosmetic,” not “default to zero because three variants were enough work.”
 
-**When to add.** As soon as the variant’s scoped Flutter has a meaningful continuous or stepped axis: density, color amount, type scale, motion intensity, column weight, and so on. If you can imagine the user muttering “a bit tighter” or “a touch more accent” **without** wanting a full regeneration, wire that axis. **Not** micro-margins or one-off nudges; those are not parameters.
+**When to add.** As soon as the variant’s scoped CSS has a meaningful continuous or stepped axis: density, color amount, type scale, motion intensity, column weight, and so on. If you can imagine the user muttering “a bit tighter” or “a touch more accent” **without** wanting a full regeneration, wire that axis. **Not** micro-margins or one-off nudges; those are not parameters.
 
-**Freeform (`action` is `impeccable-flutter`) bias.** You did not load a sub-command reference, so you must **choose** signature axes yourself. Match the budget table: for a hero or large composition, that means **2–3 axes per variant**, not 1. Prefer knobs that sit on the dimensions where your three variants actually differ (if density varies, expose it as a `steps` knob; if color commitment varies, expose it as a `range`). A hero that ships with **0** params is almost always a mistake, not a judgment call. A hero with exactly **1** param is underweight unless the design is genuinely a fixed-point comparison. Start from the budget table, not from zero.
+**Freeform (`action` is `impeccable`) bias.** You did not load a sub-command reference, so you must **choose** signature axes yourself. Match the budget table: for a hero or large composition, that means **2–3 axes per variant**, not 1. Prefer knobs that sit on the dimensions where your three variants actually differ (if density varies, expose it as a `steps` knob; if color commitment varies, expose it as a `range`). A hero that ships with **0** params is almost always a mistake, not a judgment call. A hero with exactly **1** param is underweight unless the design is genuinely a fixed-point comparison. Start from the budget table, not from zero.
 
 **Budget scales with the element's visual weight, not token budget.** Knobs need real estate to read as tunable; three sliders on a single control are noise.
 
 - **Leaf / tiny**: a single button, icon, input, bare heading, solitary paragraph: **0 params.**
 - **Small composition**: labeled input, simple card, short callout (≤ ~5 visual children): **0–1** params when one dominant axis is obvious; otherwise **0.**
 - **Medium composition**: section component, nav cluster, dense card, short feature block (6–15 visual children): **target 2**; **1** is acceptable if the block is simple; **0** only when variants are truly fixed points.
-- **Large composition**: hero section, full page region, spread layout, strong internal structure (16+ visual children or multiple sub-sections): **target 2–3**; **up to 4** when several independent axes (e.g. structure `steps` + `density` + one accent) are all authored in scoped Flutter.
+- **Large composition**: hero section, full page region, spread layout, strong internal structure (16+ visual children or multiple sub-sections): **target 2–3**; **up to 4** when several independent axes (e.g. structure `steps` + `density` + one accent) are all authored in scoped CSS.
 
-**When in doubt, ask whether a dial exists before defaulting to zero.** The user can always request more variants, but the point of live mode is instant tuning without another Go. Crowding the panel is bad; **under-shipping** knobs on a dense composition is the more common failure for freeform. Count by **visual** children, not Widget Tree depth; a shallow-but-wide hero is still large.
+**When in doubt, ask whether a dial exists before defaulting to zero.** The user can always request more variants, but the point of live mode is instant tuning without another Go. Crowding the panel is bad; **under-shipping** knobs on a dense composition is the more common failure for freeform. Count by **visual** children, not DOM depth; a shallow-but-wide hero is still large.
 
 **Hard cap per variant**: at most **four** parameters so the panel stays legible; rare fifth only if the reference explicitly allows it.
 
 **How to declare.** Put a JSON manifest on the variant wrapper:
 
 ```html
-<div data-impeccable-flutter-variant="1" data-impeccable-flutter-params='[
+<div data-impeccable-variant="1" data-impeccable-params='[
   {"id":"color-amount","kind":"range","min":0,"max":1,"step":0.05,"default":0.5,"label":"Color amount"},
   {"id":"density","kind":"steps","default":"snug","label":"Density","options":[
     {"value":"airy","label":"Airy"},
@@ -318,21 +321,21 @@ Each variant can expose **coarse** knobs alongside the full Dart/Flutter replace
 
 **Three kinds:**
 
-- `range`: smooth slider. Drives a Flutter custom property `--p-<id>` on the variant wrapper. Author Flutter with `var(--p-color-amount, 0.5)`. Fields: `min`, `max`, `step`, `default` (number), `label`.
-- `steps`: segmented radio. Drives a data attribute `data-p-<id>` on the variant wrapper. Author Flutter with `:scope[data-p-density="airy"] .grid { ... }`. Fields: `options` (array of `{value, label}`), `default` (string), `label`.
-- `toggle`: on/off switch. Drives BOTH a Flutter var (`--p-<id>: 0|1`) and a data attribute (present when on, absent when off). Use whichever is more convenient. Fields: `default` (boolean), `label`.
+- `range`: smooth slider. Drives a CSS custom property `--p-<id>` on the variant wrapper. Author CSS with `var(--p-color-amount, 0.5)`. Fields: `min`, `max`, `step`, `default` (number), `label`.
+- `steps`: segmented radio. Drives a data attribute `data-p-<id>` on the variant wrapper. Author CSS with `:scope[data-p-density="airy"] .grid { ... }`. Fields: `options` (array of `{value, label}`), `default` (string), `label`.
+- `toggle`: on/off switch. Drives BOTH a CSS var (`--p-<id>: 0|1`) and a data attribute (present when on, absent when off). Use whichever is more convenient. Fields: `default` (boolean), `label`.
 
-**Signature params per action.** For named sub-commands, read that action’s `reference/<action>.md` for one or two **MUST** params (e.g. `layout` → `density`). Those are non-negotiable when the design can express them. **Freeform has no file-level MUST**; the **Freeform (`impeccable-flutter`) bias** in this section is the stand-in. If the user’s action is both stylized and sub-command (e.g. `colorize`), the sub-command’s MUST list takes precedence for its axes; still respect the **Hard cap** and add no redundant duplicate knobs.
+**Signature params per action.** For named sub-commands, read that action’s `reference/<action>.md` for one or two **MUST** params (e.g. `layout` → `density`). Those are non-negotiable when the design can express them. **Freeform has no file-level MUST**; the **Freeform (`impeccable`) bias** in this section is the stand-in. If the user’s action is both stylized and sub-command (e.g. `colorize`), the sub-command’s MUST list takes precedence for its axes; still respect the **Hard cap** and add no redundant duplicate knobs.
 
 **Reset on variant switch.** User dials density on v1, flips to v2, v2 starts at v2's declared defaults. Known limitation; preservation across variants may land later.
 
 **On accept**, the browser sends the user's current values in the accept event. `live-accept.mjs` writes them as a sibling comment:
 
 ```html
-<!-- impeccable-flutter-param-values SESSION_ID: {"color-amount":0.7,"density":"packed"} -->
+<!-- impeccable-param-values SESSION_ID: {"color-amount":0.7,"density":"packed"} -->
 ```
 
-The carbonize cleanup step (see below) reads that comment and bakes the chosen values into the final Flutter. For `steps`/`toggle` attribute selectors: keep only the branch matching the chosen value, drop the others, collapse `:scope[data-p-density="packed"] .grid` to a semantic class rule. For `range` vars: either substitute the literal or keep the var with the chosen value as its new default.
+The carbonize cleanup step (see below) reads that comment and bakes the chosen values into the final CSS. For `steps`/`toggle` attribute selectors: keep only the branch matching the chosen value, drop the others, collapse `:scope[data-p-density="packed"] .grid` to a semantic class rule. For `range` vars: either substitute the literal or keep the var with the chosen value as its new default.
 
 ### 8. Signal done
 
@@ -364,17 +367,17 @@ The goal is the same: give the user three variants to choose from AND persist th
 
 Use the error payload:
 
-- `element_not_in_source` with `generatedMatch: "public/docs/foo.html"`: the served Dart is generated. Find the generator (grep for writers of that path, e.g. `scripts/build-sub-pages.js`, an Astro/Next template) and locate the template or partial that emits this element.
+- `element_not_in_source` with `generatedMatch: "public/docs/foo.html"`: the served HTML is generated. Find the generator (grep for writers of that path, e.g. `scripts/build-sub-pages.js`, an Astro/Next template) and locate the template or partial that emits this element.
 - `element_not_found`: the element is runtime-injected. Look for the component that renders it (React/Vue/Svelte), the JS that assembles it, or the data source that feeds it.
 - `file_is_generated` with `file: "..."`: user pointed at a generated file explicitly. Same resolution as `element_not_in_source`.
 
 Read the candidate source until you're confident where a change to the element would belong. If the change is purely visual, that source might be a shared stylesheet, not the template.
 
-### Step 2: Show three variants in the Widget Tree for preview
+### Step 2: Show three variants in the DOM for preview
 
 The browser bar is waiting for variants. Even without a wrapper in source, you still need to show something:
 
-1. Manually write the wrapper scaffold into the **served** file (the one the browser actually loaded). Use the same structure `live-wrap.mjs` produces; `<!-- impeccable-flutter-variants-start ID --><div data-impeccable-flutter-variants="ID" data-impeccable-flutter-variant-count="3" style="display: contents">…</div><!-- end -->`.
+1. Manually write the wrapper scaffold into the **served** file (the one the browser actually loaded). Use the same structure `live-wrap.mjs` produces; `<!-- impeccable-variants-start ID --><div data-impeccable-variants="ID" data-impeccable-variant-count="3" style="display: contents">…</div><!-- end -->`.
 2. Insert your three variant divs inside it, same shape as the deterministic path.
 3. Signal done with `--reply EVENT_ID done --file <served file>`. The browser's no-HMR fallback will fetch and inject.
 
@@ -396,7 +399,7 @@ Remove the wrapper you inserted in Step 2. Nothing else to do.
 
 ## Handle `accept`
 
-Event: `{id, variantId, _acceptResult, _completionAck}`. The poll script already ran `live-accept.mjs` to handle the file operation deterministically, then acknowledged event delivery to the helper. The browser Widget Tree is already updated.
+Event: `{id, variantId, _acceptResult, _completionAck}`. The poll script already ran `live-accept.mjs` to handle the file operation deterministically, then acknowledged event delivery to the helper. The browser DOM is already updated.
 
 - `_completionAck.ok !== true`: do not poll yet. Run `live-status.mjs` / `live-resume.mjs`, complete the cleanup manually if needed, then run `live-complete.mjs --id EVENT_ID`.
 - `_acceptResult.handled: true` and `carbonize: false`: nothing to do. Poll again.
@@ -406,17 +409,22 @@ Event: `{id, variantId, _acceptResult, _completionAck}`. The poll script already
 
 ### Required after accept (carbonize)
 
-When `_acceptResult.carbonize === true`, the accepted variant was stitched into source with helper markers and inline Flutter so the browser can render it immediately with no visual gap. That stitch-in is **temporary**. The agent must rewrite it into permanent form before doing anything else. Skipping this leaves dead `@scope` rules for unaccepted variants, a pointless `data-impeccable-flutter-variant` wrapper, and `impeccable-flutter-carbonize-start/end` comment noise in the source file; all of which accumulate across sessions.
+When `_acceptResult.carbonize === true`, the accepted variant was stitched into source with helper markers and inline CSS so the browser can render it immediately with no visual gap. That stitch-in is **temporary**. The agent must rewrite it into permanent form before doing anything else. Skipping this leaves dead `@scope` rules for unaccepted variants, a pointless `data-impeccable-variant` wrapper, and `impeccable-carbonize-start/end` comment noise in the source file; all of which accumulate across sessions.
 
 Do these five steps in the current thread, synchronously, before the next poll. Do not poll again until the file is clean.
 
-1. **Locate the carbonize block** in the source file (`_acceptResult.file`). It's bracketed by `<!-- impeccable-flutter-carbonize-start SESSION_ID -->` and `<!-- impeccable-flutter-carbonize-end SESSION_ID -->` and contains a `<style data-impeccable-flutter-css="SESSION_ID">` element. If the variant declared parameters, an `<!-- impeccable-flutter-param-values SESSION_ID: {...} -->` comment sits alongside the style tag with the user's chosen values; read it first; it drives steps 3 and 4 below.
-2. **Move the Flutter rules** into the project's real stylesheet. Which stylesheet depends on the project (e.g. `site/styles/workflow.css` for an Astro project, or the component's co-located Flutter file for a Vite/Next project; pick whichever already owns styling for the surrounding element).
-3. **Bake in parameter values while rewriting selectors.** For `@scope ([data-impeccable-flutter-variant="N"])` wrappers: retarget to real, semantic classes on the accepted Dart (`.why-visual--v2 .v2-label { … }`). For `:scope[data-p-<id>="VALUE"]` selectors: keep only the branch matching the chosen value from the param-values comment; drop the others (they're dead after accept). For `var(--p-<id>, DEFAULT)` in the Flutter: either substitute the literal value, or if the param is still useful as a knob going forward, leave the var and update its initial declaration to the chosen value.
-4. **Unwrap the accepted content.** Delete the `<div data-impeccable-flutter-variant="N" style="display: contents">` that wraps it. Drop `data-impeccable-flutter-params` and any `data-p-*` attributes from it; those are live-mode plumbing, not source.
-5. **Delete the inline `<style>` block, the `<!-- impeccable-flutter-param-values -->` comment if present, and both `<!-- impeccable-flutter-carbonize-start/end -->` markers.** Also drop any `@scope` rules for variants other than the accepted one; those are dead code now.
+1. **Locate the carbonize block** in the source file (`_acceptResult.file`). It's bracketed by `<!-- impeccable-carbonize-start SESSION_ID -->` and `<!-- impeccable-carbonize-end SESSION_ID -->` and contains a `<style data-impeccable-css="SESSION_ID">` element. If the variant declared parameters, an `<!-- impeccable-param-values SESSION_ID: {...} -->` comment sits alongside the style tag with the user's chosen values; read it first; it drives steps 3 and 4 below.
+2. **Move the CSS rules** into the project's real stylesheet. Which stylesheet depends on the project (e.g. `site/styles/workflow.css` for an Astro project, or the component's co-located CSS file for a Vite/Next project; pick whichever already owns styling for the surrounding element).
+3. **Bake in parameter values while rewriting selectors.** For `@scope ([data-impeccable-variant="N"])` wrappers: retarget to real, semantic classes on the accepted HTML (`.why-visual--v2 .v2-label { … }`). For `:scope[data-p-<id>="VALUE"]` selectors: keep only the branch matching the chosen value from the param-values comment; drop the others (they're dead after accept). For `var(--p-<id>, DEFAULT)` in the CSS: either substitute the literal value, or if the param is still useful as a knob going forward, leave the var and update its initial declaration to the chosen value.
+4. **Unwrap the accepted content.** Delete the `<div data-impeccable-variant="N" style="display: contents">` that wraps it. Drop `data-impeccable-params` and any `data-p-*` attributes from it; those are live-mode plumbing, not source. Keep `data-flutter-file` and `data-flutter-widget` attributes intact on the semantic element so subsequent edits on the same widget still map cleanly.
+5. **Delete the inline `<style>` block, the `<!-- impeccable-param-values -->` comment if present, and both `<!-- impeccable-carbonize-start/end -->` markers.** Also drop any `@scope` rules for variants other than the accepted one; those are dead code now.
+6. **Translate the accepted design into Flutter `.dart` code immediately**:
+   - Inspect `_acceptResult.flutterFile`, `_acceptResult.flutterWidget`, and `_acceptResult.paramValues` (from `<!-- impeccable-param-values -->`).
+   - Create or update the target Flutter widget/screen in `lib/.../*.dart` to match the accepted HTML/CSS structure, layout topology, typography hierarchy, color commitment, and tuned knob values (`paramValues`).
+   - Map all visual tokens to the Flutter project's design system (`context.colorScheme.*`, `AppTextStyles.*`, `AppSpacing.*`, `AppRadius.*`, `AppIconWidget`, `context.l10n.*`) — never hardcode raw `Color(0xFF...)` or ad-hoc `TextStyle(...)` in widget `build()` methods.
+   - Run `flutter analyze <flutterFile>` to verify zero analyzer issues on the updated `.dart` file.
 
-After the file is clean, run `live-complete.mjs --id SESSION_ID`, verify it reports `phase: "completed"`, then poll again.
+After both `.impeccable-flutter/preview/index.html` and the Flutter `.dart` file are clean, run `node .qoder/skills/impeccable-flutter/scripts/live-complete.mjs --id SESSION_ID`, verify it reports `phase: "completed"`, then immediately run `node .qoder/skills/impeccable-flutter/scripts/live-poll.mjs` again so the user can continue picking and refining other widgets on the stage.
 
 A background agent may be used for the rewrite, but the current thread is responsible for verifying the five steps are complete before issuing the next poll. In practice, inline is usually faster and less error-prone.
 
@@ -452,15 +460,15 @@ When the poll returns `exit`, proceed to cleanup. If the poll is still running a
 node .qoder/skills/impeccable-flutter/scripts/live-server.mjs stop
 ```
 
-Stops the HTTP server and runs `live-inject.mjs --remove` to strip `localhost:…/live.js` from the Dart entry. To stop the server but keep the inject tag (for a quick restart), use `stop --keep-inject`. `.impeccable-flutter/live/config.json` persists as project config for future sessions.
+Stops the HTTP server and runs `live-inject.mjs --remove` to strip `localhost:…/live.js` from the HTML entry. To stop the server but keep the inject tag (for a quick restart), use `stop --keep-inject`. `.impeccable/live/config.json` persists as project config for future sessions.
 
 Then:
-- Remove any leftover variant wrappers (search for `impeccable-flutter-variants-start` markers).
-- Remove any leftover carbonize blocks (search for `impeccable-flutter-carbonize-start` markers).
+- Remove any leftover variant wrappers (search for `impeccable-variants-start` markers).
+- Remove any leftover carbonize blocks (search for `impeccable-carbonize-start` markers).
 
 ## First-time setup (config missing or invalid)
 
-If `live.mjs` outputs `{ ok: false, error: "config_missing" | "config_invalid", path }`, write the live config at the reported path. By default this is `.impeccable-flutter/live/config.json`.
+If `live.mjs` outputs `{ ok: false, error: "config_missing" | "config_invalid", path }`, write the live config at the reported path. By default this is `.impeccable/live/config.json`.
 
 Schema:
 
@@ -474,9 +482,9 @@ Schema:
 }
 ```
 
-`files` is the inject target; **the Dart files the browser actually loads**, not necessarily source. Each entry is either a literal path (`"public/index.html"`) or a glob pattern (`"public/**/*.html"`). Tracked or generated doesn't matter here; wrap has its own generated-file guard and routes accepts through the fallback flow.
+`files` is the inject target; **the HTML files the browser actually loads**, not necessarily source. Each entry is either a literal path (`"public/index.html"`) or a glob pattern (`"public/**/*.html"`). Tracked or generated doesn't matter here; wrap has its own generated-file guard and routes accepts through the fallback flow.
 
-`exclude` (optional) is a list of glob patterns matching files to skip, even if a `files` glob would have included them. Use for email templates, demo fixtures, or any Dart that isn't a live page.
+`exclude` (optional) is a list of glob patterns matching files to skip, even if a `files` glob would have included them. Use for email templates, demo fixtures, or any HTML that isn't a live page.
 
 `cspChecked` tracks whether the CSP detection step below has already run. Absent on first setup; set to `true` after CSP is checked (whether patched, declined, or not needed).
 
@@ -486,13 +494,13 @@ Schema:
 
 | Framework | `files` | `insertBefore` | `commentSyntax` |
 |-----------|---------|----------------|-----------------|
-| SPA with single shell (Vite / React / Plain Dart) | `["index.html"]` | `</body>` | `html` |
+| SPA with single shell (Vite / React / Plain HTML) | `["index.html"]` | `</body>` | `html` |
 | Next.js (App Router) | `["app/layout.tsx"]` | `</body>` | `jsx` |
 | Next.js (Pages) | `["pages/_document.tsx"]` | `</body>` | `jsx` |
 | Nuxt | `["app.vue"]` | `</body>` | `html` |
 | Svelte / SvelteKit | `["src/app.html"]` | `</body>` | `html` |
 | Astro | `[" <root layout .astro>"]` | `</body>` | `html` |
-| Multi-page (separate Dart per route) | `["public/**/*.html"]`: a glob covering the served directory | `</body>` | `html` |
+| Multi-page (separate HTML per route) | `["public/**/*.html"]`: a glob covering the served directory | `</body>` | `html` |
 
 Pick an anchor that exists in every file (`</body>` almost always works). Use `insertAfter` if the anchor should match **after** a specific line.
 
@@ -502,7 +510,7 @@ For multi-page sites whose pages are *rebuilt* by a generator (Astro, static-sit
 
 ### Drift-heal warning
 
-On every `live.mjs` boot, after inject, the project is scanned for Dart files under common page-source roots (`public/`, `src/`, `app/`, `pages/`). If any exist that aren't covered by the resolved `files` list, the output includes a `configDrift` field:
+On every `live.mjs` boot, after inject, the project is scanned for HTML files under common page-source roots (`public/`, `src/`, `app/`, `pages/`). If any exist that aren't covered by the resolved `files` list, the output includes a `configDrift` field:
 
 ```json
 {
@@ -512,14 +520,14 @@ On every `live.mjs` boot, after inject, the project is scanned for Dart files un
   "configDrift": {
     "orphans": ["public/new-section/index.html", "public/docs/new-command.html"],
     "orphanCount": 2,
-    "hint": "2 Dart file(s) exist but aren't in config.files. Consider adding them, or use a glob pattern like \"public/**/*.html\"."
+    "hint": "2 HTML file(s) exist but aren't in config.files. Consider adding them, or use a glob pattern like \"public/**/*.html\"."
   }
 }
 ```
 
 When `configDrift` is present, surface it to the user once per session before entering the poll loop:
 
-> Noticed N Dart file(s) in the project that aren't in `config.files`:
+> Noticed N HTML file(s) in the project that aren't in `config.files`:
 >
 > - `public/new-section/index.html`
 > - `public/docs/new-command.html`
@@ -540,7 +548,7 @@ node .qoder/skills/impeccable-flutter/scripts/detect-csp.mjs
 
 Output: `{ shape, signals }` where `shape` is one of `append-arrays`, `append-string`, `middleware`, `meta-tag`, or `null`. The shape is named by *patch mechanism*, so one template covers many frameworks.
 
-- **`null`**: no CSP; skip to writing `.impeccable-flutter/live/config.json` with `cspChecked: true`.
+- **`null`**: no CSP; skip to writing `.impeccable/live/config.json` with `cspChecked: true`.
 - **`append-arrays`**: CSP defined as structured directive arrays. Auto-patchable. See *append-arrays* below. Covers:
   - Monorepo helpers with `additionalScriptSrc` / `additionalConnectSrc` options (Next.js + shared config package)
   - SvelteKit `kit.csp.directives`
@@ -574,12 +582,12 @@ CSP expressed as structured directive arrays. Patch mechanism: declare a dev-onl
 **Declare near the top of the file that holds the CSP arrays:**
 
 ```ts
-// Dev-only allowance so impeccable-flutter live mode can load. Guarded by NODE_ENV.
-const __impeccable-flutterLiveDev =
+// Dev-only allowance so impeccable live mode can load. Guarded by NODE_ENV.
+const __impeccableLiveDev =
   process.env.NODE_ENV === "development" ? ["http://localhost:8400"] : [];
 ```
 
-**Append `...__impeccable-flutterLiveDev` to the script-src and connect-src directive arrays.** Per-framework specifics:
+**Append `...__impeccableLiveDev` to the script-src and connect-src directive arrays.** Per-framework specifics:
 
 - **Next.js + monorepo helper**: edit the *app's* `next.config.*` (not the shared helper), appending to `additionalScriptSrc` and `additionalConnectSrc` passed into `createBaseNextConfig` (or equivalent). Keeps the shared package clean.
 - **SvelteKit**: edit `svelte.config.js`, appending to `kit.csp.directives['script-src']` and `kit.csp.directives['connect-src']`.
@@ -589,21 +597,21 @@ Reference outputs:
 - `tests/framework-fixtures/nextjs-turborepo/expected-after-patch.ts` (Next.js)
 - `tests/framework-fixtures/sveltekit-csp/expected-after-patch.js` (SvelteKit)
 
-Idempotency: if `__impeccable-flutterLiveDev` already exists in the file, the patch is already applied; skip asking and just mark `cspChecked: true`.
+Idempotency: if `__impeccableLiveDev` already exists in the file, the patch is already applied; skip asking and just mark `cspChecked: true`.
 
 #### append-string
 
 CSP built as a literal value string. Two-point patch: declare a dev-only string near the top, interpolate it into the CSP at the `script-src` and `connect-src` directives.
 
 ```ts
-// Dev-only allowance so impeccable-flutter live mode can load.
-const __impeccable-flutterLiveDev =
+// Dev-only allowance so impeccable live mode can load.
+const __impeccableLiveDev =
   process.env.NODE_ENV === "development" ? " http://localhost:8400" : "";
 ```
 
 Then in the CSP value string:
-- `script-src 'self' 'unsafe-inline'` → `` `script-src 'self' 'unsafe-inline'${__impeccable-flutterLiveDev}` ``
-- `connect-src 'self'` → `` `connect-src 'self'${__impeccable-flutterLiveDev}` ``
+- `script-src 'self' 'unsafe-inline'` → `` `script-src 'self' 'unsafe-inline'${__impeccableLiveDev}` ``
+- `connect-src 'self'` → `` `connect-src 'self'${__impeccableLiveDev}` ``
 
 (Leading space on the dev string so it concatenates cleanly into the existing value. Convert the literal CSP directives into template strings as part of the edit if they aren't already.)
 
@@ -617,6 +625,6 @@ Reference outputs:
 
 ### Troubleshooting
 
-If a user says "no" to the CSP patch at setup time and later complains that live doesn't work: their dev CSP blocks `http://localhost:8400`. Fix: delete `cspChecked` from `.impeccable-flutter/live/config.json` and re-run `live.mjs`: setup will ask again.
+If a user says "no" to the CSP patch at setup time and later complains that live doesn't work: their dev CSP blocks `http://localhost:8400`. Fix: delete `cspChecked` from `.impeccable/live/config.json` and re-run `live.mjs`: setup will ask again.
 
 Then re-run `live.mjs`.

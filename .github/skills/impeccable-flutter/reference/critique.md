@@ -115,4 +115,4 @@ Ask 2-4 targeted questions based on findings to shape the action plan.
 
 ### Recommended Actions
 
-Present a prioritized action summary mapping findings to `impeccable-flutter` commands. End with `$impeccable-flutter polish` as the final step.
+Present a prioritized action summary mapping findings to `impeccable-flutter` commands. End with `/impeccable-flutter polish` as the final step.
