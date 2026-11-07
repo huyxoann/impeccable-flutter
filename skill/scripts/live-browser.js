@@ -3606,8 +3606,8 @@ void main() {
     }
 
     if (detectBadge) {
-      detectBadge.style.display = (detectActive && detectCount > 0) ? 'inline' : 'none';
-      detectBadge.textContent = detectCount;
+      detectBadge.style.display = detectActive ? 'inline' : 'none';
+      detectBadge.textContent = detectCount > 0 ? detectCount : '0 ✓';
     }
 
     // When pick is active, make detect overlays click-through so the picker works
@@ -3624,13 +3624,12 @@ void main() {
     updateGlobalBarState();
 
     if (detectActive) {
-      if (!detectScriptLoaded) {
+      if (!detectScriptLoaded || !detectReady) {
+        detectScriptLoaded = false;
         detectPendingScan = true;
         loadDetectScript();
-      } else if (detectReady) {
-        window.postMessage({ source: 'impeccable-command', action: 'scan' }, '*');
       } else {
-        detectPendingScan = true;
+        window.postMessage({ source: 'impeccable-command', action: 'scan' }, '*');
       }
     } else {
       window.postMessage({ source: 'impeccable-command', action: 'remove' }, '*');
@@ -3663,6 +3662,13 @@ void main() {
     const s = document.createElement('script');
     s.src = 'http://localhost:' + PORT + '/detect.js';
     s.dataset.impeccableExtension = 'true';
+    s.onerror = () => {
+      detectScriptLoaded = false;
+      detectActive = false;
+      detectPendingScan = false;
+      updateGlobalBarState();
+      showToast('Failed to load detector (/detect.js)', 3000);
+    };
     document.head.appendChild(s);
   }
 
@@ -3680,6 +3686,15 @@ void main() {
     if (e.data.source === 'impeccable-results') {
       detectCount = e.data.count || 0;
       updateGlobalBarState();
+      showToast(
+        detectCount === 0
+          ? '✓ Clean — 0 design issues detected'
+          : 'Detected ' + detectCount + ' design issue' + (detectCount === 1 ? '' : 's'),
+        2500
+      );
+    }
+    if (e.data.source === 'impeccable-error') {
+      showToast('Detector error: ' + (e.data.message || 'unknown'), 3000);
     }
   }
 

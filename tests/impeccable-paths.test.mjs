@@ -206,5 +206,11 @@ describe('impeccable project paths', () => {
       'impeccable-finish-reviewer.md',
       'impeccable-manual-edit-applier.md',
     ]);
+
+    const bundledDetector = readFileSync(
+      join(repoRoot, '.claude/skills/impeccable-flutter/scripts/detect-antipatterns-browser.js'),
+      'utf-8',
+    );
+    assert.match(bundledDetector, /data-impeccable-ignore/);
   });
 });

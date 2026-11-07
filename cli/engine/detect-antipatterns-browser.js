@@ -2066,8 +2066,9 @@ function checkTypography() {
   const fontUsage = new Map(); // primary font name → count of elements
   let totalTextElements = 0;
   for (const el of document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, td, th, dd, blockquote, figcaption, a, button, label, span')) {
-    // Skip impeccable's own elements
-    if (el.closest && el.closest('.impeccable-overlay, .impeccable-label, .impeccable-banner, .impeccable-tooltip')) continue;
+    // Skip impeccable's own elements and Flutter stage toolbar
+    if (el.closest && el.closest('.impeccable-overlay, .impeccable-label, .impeccable-banner, .impeccable-tooltip, [id^="impeccable-live-"], [data-impeccable-ignore]')) continue;
+    if (el.getAttribute && el.getAttribute('data-impeccable-stage') !== null) continue;
     // Only count elements that actually have visible direct text
     const hasText = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim().length > 0);
     if (!hasText) continue;
@@ -2101,6 +2102,8 @@ function checkTypography() {
 
   const sizes = new Set();
   for (const el of document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,span,a,li,td,th,label,button,div')) {
+    if (el.closest && el.closest('.impeccable-overlay, .impeccable-label, .impeccable-banner, .impeccable-tooltip, [id^="impeccable-live-"], [data-impeccable-ignore]')) continue;
+    if (el.getAttribute && el.getAttribute('data-impeccable-stage') !== null) continue;
     const fs = parseFloat(getComputedStyle(el).fontSize);
     if (fs > 0 && fs < 200) sizes.add(Math.round(fs * 10) / 10);
   }
@@ -2116,6 +2119,8 @@ function checkTypography() {
 }
 
 function isCardLikeDOM(el) {
+  if (el.getAttribute && el.getAttribute('data-impeccable-stage') !== null) return false;
+  if (el.closest && el.closest('[data-impeccable-ignore], [id^="impeccable-live-"], .impeccable-overlay, .impeccable-label, .impeccable-banner, .impeccable-tooltip')) return false;
   const tag = el.tagName.toLowerCase();
   if (SAFE_TAGS.has(tag) || ['input','select','textarea','img','video','canvas','picture'].includes(tag)) return false;
   const style = getComputedStyle(el);
@@ -2985,7 +2990,7 @@ if (IS_BROWSER) {
     for (const el of document.querySelectorAll('*')) {
       if (candidates.length >= maxCandidates) break;
       if (el.closest('.impeccable-overlay, .impeccable-label, .impeccable-banner, .impeccable-tooltip')) continue;
-      if (el.closest('[id^="impeccable-live-"]')) continue;
+      if (el.closest('[id^="impeccable-live-"]') || el.closest('[data-impeccable-ignore]') || el.getAttribute('data-impeccable-stage') !== null) continue;
       if (el === document.body || el === document.documentElement) continue;
 
       const tag = el.tagName.toLowerCase();
@@ -3598,7 +3603,7 @@ if (IS_BROWSER) {
       if (elId.startsWith('claude-') || elId.startsWith('cic-')) continue;
       // Skip the impeccable live-mode overlay (highlight, tooltip, bar, picker, toast).
       // These are inspector chrome, not part of the user's design.
-      if (el.closest('[id^="impeccable-live-"]')) continue;
+      if (el.closest('[id^="impeccable-live-"]') || el.closest('[data-impeccable-ignore]') || el.getAttribute('data-impeccable-stage') !== null) continue;
       // Skip html/body -- page-level findings go in the banner, not a full-page overlay
       if (el === document.body || el === document.documentElement) continue;
 
@@ -3651,7 +3656,7 @@ if (IS_BROWSER) {
     // regex scan, so the inspector's own inline styles (transitions on top/
     // left/width/height, etc.) don't register as page anti-patterns.
     const docClone = document.documentElement.cloneNode(true);
-    for (const node of docClone.querySelectorAll('[id^="impeccable-live-"]')) {
+    for (const node of docClone.querySelectorAll('[id^="impeccable-live-"], [data-impeccable-ignore]')) {
       node.remove();
     }
     const htmlPatternFindings = checkHtmlPatterns(docClone.outerHTML);
@@ -3899,6 +3904,7 @@ if (IS_BROWSER) {
 
   let firstScanDone = false;
   const scan = function(options = {}) {
+    if (styleEl && !styleEl.isConnected) document.head.appendChild(styleEl);
     clearOverlays();
     const generation = scanGeneration;
     const collected = collectBrowserFindings();
@@ -3916,6 +3922,7 @@ if (IS_BROWSER) {
   };
 
   const scanAsync = async function(options = {}) {
+    if (styleEl && !styleEl.isConnected) document.head.appendChild(styleEl);
     clearOverlays();
     const generation = scanGeneration;
     if (shouldRunVisualContrast(options)) {

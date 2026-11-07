@@ -155,18 +155,25 @@ function broadcast(msg) {
 // Load scripts
 // ---------------------------------------------------------------------------
 
+const DETECT_PATHS = [
+  path.join(__dirname, 'detect-antipatterns-browser.js'),
+  path.join(__dirname, '..', '..', 'cli', 'engine', 'detect-antipatterns-browser.js'),
+  path.join(__dirname, '..', '..', '..', '..', 'cli', 'engine', 'detect-antipatterns-browser.js'),
+  path.join(process.cwd(), 'node_modules', 'impeccable-flutter', 'cli', 'engine', 'detect-antipatterns-browser.js'),
+  path.join(process.cwd(), 'node_modules', 'impeccable', 'cli', 'engine', 'detect-antipatterns-browser.js'),
+];
+
+function readDetectScript() {
+  for (const p of DETECT_PATHS) {
+    try { return fs.readFileSync(p, 'utf-8'); } catch { /* try next */ }
+  }
+  return '';
+}
+
 function loadBrowserScripts() {
   // Detection script: look relative to the skill scripts dir, then fall back
-  // to the npm package location (cli/engine/detect-antipatterns-browser.js).
-  // This one IS cached — detect.js rarely changes during a session.
-  const detectPaths = [
-    path.join(__dirname, '..', '..', '..', '..', 'cli', 'engine', 'detect-antipatterns-browser.js'),
-    path.join(process.cwd(), 'node_modules', 'impeccable', 'cli', 'engine', 'detect-antipatterns-browser.js'),
-  ];
-  let detectScript = '';
-  for (const p of detectPaths) {
-    try { detectScript = fs.readFileSync(p, 'utf-8'); break; } catch { /* try next */ }
-  }
+  // to the repo/npm package location (cli/engine/detect-antipatterns-browser.js).
+  const detectScript = readDetectScript();
 
   // live-browser.js: DO NOT cache. Return the path so the /live.js handler
   // can re-read on every request. Editing the browser script during iteration
@@ -302,9 +309,13 @@ function createRequestHandler({ detectScript, sessionPath, livePath }) {
       return;
     }
     if (p === '/detect.js' || p === '/') {
-      if (!detectScript) { res.writeHead(404); res.end('Not available'); return; }
-      res.writeHead(200, { 'Content-Type': 'application/javascript' });
-      res.end(detectScript);
+      const script = readDetectScript() || detectScript;
+      if (!script) { res.writeHead(404); res.end('Not available'); return; }
+      res.writeHead(200, {
+        'Content-Type': 'application/javascript',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      });
+      res.end(script);
       return;
     }
 
@@ -840,7 +851,7 @@ if (existingRecord?.info) {
   }
 }
 
-state.token = randomUUID();
+state.token = process.env.IMPECCABLE_LIVE_TOKEN || randomUUID();
 state.sessionStore = createLiveSessionStore({ cwd: process.cwd() });
 restorePendingEventsFromStore();
 const portArg = args.find(a => a.startsWith('--port='));
